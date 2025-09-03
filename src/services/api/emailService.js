@@ -35,10 +35,13 @@ const initGmailClient = async () => {
     discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest'],
     scope: GMAIL_SCOPES.join(' ')
   });
-
-  gmailClient = window.gapi.client.gmail;
-  isGmailAuthenticated = window.gapi.auth2.getAuthInstance().isSignedIn.get();
-  
+gmailClient = window.gapi.client.gmail;
+  const authInstance = window.gapi.auth2.getAuthInstance();
+  if (authInstance) {
+    isGmailAuthenticated = authInstance.isSignedIn.get();
+  } else {
+    isGmailAuthenticated = false;
+  }
   return gmailClient;
 };
 
@@ -47,9 +50,13 @@ const ensureGmailAuth = async () => {
     await initGmailClient();
   }
   
-  if (!isGmailAuthenticated) {
+  const authInstance = window.gapi.auth2.getAuthInstance();
+  if (!authInstance) {
+    throw new Error("Gmail authentication not initialized");
+  }
+  
+if (!isGmailAuthenticated) {
     try {
-      const authInstance = window.gapi.auth2.getAuthInstance();
       await authInstance.signIn();
       isGmailAuthenticated = true;
       toast.success("Gmail access granted");
