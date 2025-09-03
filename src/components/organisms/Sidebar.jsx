@@ -88,7 +88,7 @@ const Sidebar = forwardRef(({ isOpen, onClose }, ref) => {
                       ? "bg-primary text-white"
                       : "bg-gray-100 text-gray-700"
                   )}>
-                    {folder.count || 0}
+                    {folder.count ?? 0}
                   </span>
                 </NavLink>
               </li>
