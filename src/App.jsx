@@ -223,7 +223,7 @@ logout: async () => {
 }
 
 function EmailApp() {
-return (
+  return (
     <EmailAppContent />
   );
 }
