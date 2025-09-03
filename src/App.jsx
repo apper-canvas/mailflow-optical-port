@@ -1,12 +1,12 @@
-import React, { useState, useRef } from "react";
+import "@/index.css";
+import React, { useEffect, useRef, useState } from "react";
 import { Navigate, Route, BrowserRouter as Router, Routes } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
-import "@/index.css";
+import emailService from "@/services/api/emailService";
 import Sidebar from "@/components/organisms/Sidebar";
 import EmailViewPage from "@/components/pages/EmailViewPage";
 import EmailListPage from "@/components/pages/EmailListPage";
 import ComposePage from "@/components/pages/ComposePage";
-
 const EmailApp = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 const sidebarRef = useRef();
@@ -19,11 +19,17 @@ const sidebarRef = useRef();
     setSidebarOpen(false);
   };
 
-  const refreshSidebar = () => {
+const refreshSidebar = () => {
     if (sidebarRef.current) {
       sidebarRef.current.loadFolders();
     }
   };
+
+  // Register sidebar refresh callback with emailService
+  useEffect(() => {
+    const unregister = emailService.registerCallback(refreshSidebar);
+    return unregister;
+  }, []);
   return (
     <Router>
 <div className="h-screen bg-gray-100 overflow-hidden">

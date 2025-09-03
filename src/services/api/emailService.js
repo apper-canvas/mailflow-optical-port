@@ -1,6 +1,12 @@
+import React from "react";
 import emailsData from "@/services/mockData/emails.json";
+import emailService from "@/services/mockData/folders.json";
+import Error from "@/components/ui/Error";
 
 let emails = [...emailsData];
+
+// Callback system for notifying components of data changes
+let changeCallbacks = [];
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -127,9 +133,84 @@ const emailService = {
       return this.create({
         ...draftData,
         folder: "drafts"
-      });
+});
     }
+  },
+
+  // Callback management for data change notifications
+  registerCallback(callback) {
+    changeCallbacks.push(callback);
+    return () => {
+      changeCallbacks = changeCallbacks.filter(cb => cb !== callback);
+    };
+  },
+
+  // Notify all registered callbacks of data changes
+  notifyChange() {
+    changeCallbacks.forEach(callback => {
+      try {
+        callback();
+      } catch (error) {
+        console.error('Error in change callback:', error);
+      }
+    });
   }
+};
+
+// Helper function to notify change and delay
+const notifyAndDelay = async (ms = 200) => {
+  emailService.notifyChange();
+  await delay(ms);
+};
+
+// Override existing methods to include notifications
+const originalCreate = emailService.create;
+emailService.create = async function(email) {
+  const result = await originalCreate.call(this, email);
+  this.notifyChange();
+  return result;
+};
+
+const originalUpdate = emailService.update;
+emailService.update = async function(id, updates) {
+  const result = await originalUpdate.call(this, id, updates);
+  this.notifyChange();
+  return result;
+};
+
+const originalDelete = emailService.delete;
+emailService.delete = async function(id) {
+  const result = await originalDelete.call(this, id);
+  this.notifyChange();
+  return result;
+};
+
+const originalMove = emailService.move;
+emailService.move = async function(emailId, targetFolder) {
+  const result = await originalMove.call(this, emailId, targetFolder);
+  this.notifyChange();
+  return result;
+};
+
+const originalToggleStar = emailService.toggleStar;
+emailService.toggleStar = async function(emailId) {
+  const result = await originalToggleStar.call(this, emailId);
+  this.notifyChange();
+  return result;
+};
+
+const originalMarkAsRead = emailService.markAsRead;
+emailService.markAsRead = async function(emailId) {
+  const result = await originalMarkAsRead.call(this, emailId);
+  this.notifyChange();
+  return result;
+};
+
+const originalMarkAsUnread = emailService.markAsUnread;
+emailService.markAsUnread = async function(emailId) {
+  const result = await originalMarkAsUnread.call(this, emailId);
+  this.notifyChange();
+  return result;
 };
 
 export default emailService;
