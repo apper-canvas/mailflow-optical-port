@@ -82,16 +82,14 @@ const Sidebar = forwardRef(({ isOpen, onClose }, ref) => {
                 >
                   <ApperIcon name={folder.icon} size={16} />
                   <span className="flex-1">{folder.name}</span>
-                  {folder.count > 0 && (
-                    <span className={cn(
-                      "px-2 py-0.5 text-xs rounded-full font-medium",
-folder.slug === "inbox" && folder.count > 0
-                        ? "bg-primary text-white"
-                        : "bg-gray-100 text-gray-700"
-                    )}>
-                      {folder.count}
-                    </span>
-                  )}
+<span className={cn(
+                    "px-2 py-0.5 text-xs rounded-full font-medium",
+                    folder.slug === "inbox" && folder.count > 0
+                      ? "bg-primary text-white"
+                      : "bg-gray-100 text-gray-700"
+                  )}>
+                    {folder.count || 0}
+                  </span>
                 </NavLink>
               </li>
             ))
