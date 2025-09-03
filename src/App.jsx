@@ -3,7 +3,7 @@ import React, { createContext, useEffect, useRef, useState } from "react";
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
-import { clearUser, setUser } from "./store/userSlice";
+import { clearUser, setUser, setGmailAuth, clearGmailAuth } from "./store/userSlice";
 import Login from "@/components/pages/Login";
 import Signup from "@/components/pages/Signup";
 import Callback from "@/components/pages/Callback";
@@ -116,18 +116,25 @@ function EmailAppContent() {
   };
   
   // Register email service callbacks for authenticated users
-  useEffect(() => {
+useEffect(() => {
     if (isAuthenticated) {
       const unregister = emailService.registerCallback(refreshSidebar);
       return unregister;
+    } else {
+      // Clear Gmail authentication when user logs out
+      dispatch(clearGmailAuth());
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, dispatch]);
 
   // Authentication methods to share via context
   const authMethods = {
     isInitialized,
-    logout: async () => {
+logout: async () => {
       try {
+        // Clear Gmail authentication first
+        dispatch(clearGmailAuth());
+        
+        // Logout from Apper
         const { ApperUI } = window.ApperSDK;
         await ApperUI.logout();
         dispatch(clearUser());

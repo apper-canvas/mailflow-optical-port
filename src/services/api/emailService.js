@@ -13,60 +13,137 @@ const GMAIL_SCOPES = [
 // Gmail API client initialization
 let gmailClient = null;
 let isGmailAuthenticated = false;
-
+let authInstance = null;
+let initializationPromise = null;
 const initGmailClient = async () => {
-  if (!window.gapi) {
-    await new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = 'https://apis.google.com/js/api.js';
-      script.onload = resolve;
-      script.onerror = reject;
-      document.head.appendChild(script);
-    });
+  // Return existing promise if initialization is already in progress
+  if (initializationPromise) {
+    return initializationPromise;
   }
 
-  await new Promise((resolve) => {
-    window.gapi.load('client:auth2', resolve);
-  });
+  initializationPromise = (async () => {
+    try {
+      // Validate environment variables
+      const apiKey = import.meta.env.VITE_GMAIL_API_KEY;
+      const clientId = import.meta.env.VITE_GMAIL_CLIENT_ID;
+      
+      if (!apiKey || !clientId) {
+        throw new Error("Gmail API credentials not configured. Please check VITE_GMAIL_API_KEY and VITE_GMAIL_CLIENT_ID environment variables.");
+      }
 
-  await window.gapi.client.init({
-    apiKey: import.meta.env.VITE_GMAIL_API_KEY || '',
-    clientId: import.meta.env.VITE_GMAIL_CLIENT_ID || '',
-    discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest'],
-    scope: GMAIL_SCOPES.join(' ')
-  });
-gmailClient = window.gapi.client.gmail;
-  const authInstance = window.gapi.auth2.getAuthInstance();
-  if (authInstance) {
-    isGmailAuthenticated = authInstance.isSignedIn.get();
-  } else {
-    isGmailAuthenticated = false;
-  }
-  return gmailClient;
+      // Load GAPI script if not already loaded
+      if (!window.gapi) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://apis.google.com/js/api.js';
+          script.onload = resolve;
+          script.onerror = () => reject(new Error("Failed to load Gmail API script"));
+          document.head.appendChild(script);
+          
+          // Set timeout for script loading
+          setTimeout(() => reject(new Error("Gmail API script load timeout")), 10000);
+        });
+      }
+
+      // Load GAPI client and auth2
+      await new Promise((resolve, reject) => {
+        window.gapi.load('client:auth2', {
+          callback: resolve,
+          onerror: () => reject(new Error("Failed to load Gmail API client"))
+        });
+      });
+
+      // Initialize GAPI client
+      await window.gapi.client.init({
+        apiKey,
+        clientId,
+        discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest'],
+        scope: GMAIL_SCOPES.join(' ')
+      });
+
+      gmailClient = window.gapi.client.gmail;
+      authInstance = window.gapi.auth2.getAuthInstance();
+      
+      if (!authInstance) {
+        throw new Error("Gmail auth instance not available after initialization");
+      }
+      
+      // Check initial authentication status
+      isGmailAuthenticated = authInstance.isSignedIn.get();
+      
+      return gmailClient;
+    } catch (error) {
+      // Reset initialization promise on failure to allow retry
+      initializationPromise = null;
+      gmailClient = null;
+      authInstance = null;
+      isGmailAuthenticated = false;
+      throw error;
+    }
+  })();
+
+  return initializationPromise;
 };
 
 const ensureGmailAuth = async () => {
-  if (!gmailClient) {
-    await initGmailClient();
-  }
-  
-  const authInstance = window.gapi.auth2.getAuthInstance();
-  if (!authInstance) {
-    throw new Error("Gmail authentication not initialized");
-  }
-  
-if (!isGmailAuthenticated) {
-    try {
-      await authInstance.signIn();
-      isGmailAuthenticated = true;
-      toast.success("Gmail access granted");
-    } catch (error) {
-      toast.error("Gmail authentication required");
-      throw new Error("Gmail authentication failed");
+  try {
+    // Initialize Gmail client if not already done
+    if (!gmailClient || !authInstance) {
+      await initGmailClient();
     }
+    
+    // Double-check auth instance is available
+    if (!authInstance) {
+      throw new Error("Gmail authentication not initialized. Please check your API configuration.");
+    }
+    
+    // Check if already authenticated
+    if (isGmailAuthenticated && authInstance.isSignedIn.get()) {
+      return gmailClient;
+    }
+    
+    // Attempt authentication
+    if (!authInstance.isSignedIn.get()) {
+      try {
+        await authInstance.signIn({
+          prompt: 'consent'
+        });
+        isGmailAuthenticated = true;
+        toast.success("Gmail access granted successfully");
+      } catch (authError) {
+        isGmailAuthenticated = false;
+        
+        // Handle different types of authentication errors
+        if (authError.error === 'popup_closed_by_user') {
+          toast.error("Gmail authentication cancelled by user");
+          throw new Error("Gmail authentication cancelled");
+        } else if (authError.error === 'access_denied') {
+          toast.error("Gmail access denied. Please grant permissions to continue.");
+          throw new Error("Gmail access denied");
+        } else {
+          toast.error("Gmail authentication failed. Please try again.");
+          throw new Error(`Gmail authentication failed: ${authError.details || authError.error || authError.message}`);
+        }
+      }
+    } else {
+      isGmailAuthenticated = true;
+    }
+    
+    return gmailClient;
+  } catch (error) {
+    console.error("Gmail authentication error:", error);
+    
+    // Provide user-friendly error messages
+    if (error.message.includes('credentials not configured')) {
+      toast.error("Gmail integration not configured. Contact administrator.");
+    } else if (error.message.includes('script load')) {
+      toast.error("Unable to load Gmail API. Check internet connection.");
+    } else if (!error.message.includes('authentication')) {
+      toast.error("Gmail service temporarily unavailable. Please try again.");
+    }
+    
+    throw error;
   }
-  
-  return gmailClient;
 };
 
 // Helper to convert Gmail message to our format
@@ -205,7 +282,7 @@ async getById(id) {
   },
 
 async getByFolder(folder) {
-    try {
+try {
       const gmail = await ensureGmailAuth();
       
       const folderLabelMap = {
@@ -257,7 +334,7 @@ async getByFolder(folder) {
   },
 
 async search(query) {
-    try {
+try {
       const gmail = await ensureGmailAuth();
       const searchTerm = query.trim();
       
@@ -412,8 +489,7 @@ async update(id, updates) {
 
 async delete(id) {
     try {
-      const gmail = await ensureGmailAuth();
-      
+const gmail = await ensureGmailAuth();
       // Get the current email to check its current state
       const email = await this.getById(id);
       
