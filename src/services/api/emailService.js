@@ -3,454 +3,444 @@ import { toast } from "react-toastify";
 // Callback system for notifying components of data changes
 let changeCallbacks = [];
 
-// Initialize ApperClient
-const getApperClient = () => {
-  const { ApperClient } = window.ApperSDK;
-  return new ApperClient({
-    apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
-    apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+// Gmail API Configuration
+const GMAIL_SCOPES = [
+  'https://www.googleapis.com/auth/gmail.readonly',
+  'https://www.googleapis.com/auth/gmail.send',
+  'https://www.googleapis.com/auth/gmail.modify'
+];
+
+// Gmail API client initialization
+let gmailClient = null;
+let isGmailAuthenticated = false;
+
+const initGmailClient = async () => {
+  if (!window.gapi) {
+    await new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://apis.google.com/js/api.js';
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+  }
+
+  await new Promise((resolve) => {
+    window.gapi.load('client:auth2', resolve);
   });
+
+  await window.gapi.client.init({
+    apiKey: import.meta.env.VITE_GMAIL_API_KEY || '',
+    clientId: import.meta.env.VITE_GMAIL_CLIENT_ID || '',
+    discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest'],
+    scope: GMAIL_SCOPES.join(' ')
+  });
+
+  gmailClient = window.gapi.client.gmail;
+  isGmailAuthenticated = window.gapi.auth2.getAuthInstance().isSignedIn.get();
+  
+  return gmailClient;
+};
+
+const ensureGmailAuth = async () => {
+  if (!gmailClient) {
+    await initGmailClient();
+  }
+  
+  if (!isGmailAuthenticated) {
+    try {
+      const authInstance = window.gapi.auth2.getAuthInstance();
+      await authInstance.signIn();
+      isGmailAuthenticated = true;
+      toast.success("Gmail access granted");
+    } catch (error) {
+      toast.error("Gmail authentication required");
+      throw new Error("Gmail authentication failed");
+    }
+  }
+  
+  return gmailClient;
+};
+
+// Helper to convert Gmail message to our format
+const convertGmailMessage = (gmailMessage) => {
+  const headers = gmailMessage.payload?.headers || [];
+  const getHeader = (name) => headers.find(h => h.name.toLowerCase() === name.toLowerCase())?.value || '';
+  
+  const getBody = (payload) => {
+    if (payload.body?.data) {
+      return atob(payload.body.data.replace(/-/g, '+').replace(/_/g, '/'));
+    }
+    
+    if (payload.parts) {
+      for (const part of payload.parts) {
+        if (part.mimeType === 'text/plain' || part.mimeType === 'text/html') {
+          if (part.body?.data) {
+            return atob(part.body.data.replace(/-/g, '+').replace(/_/g, '/'));
+          }
+        }
+      }
+    }
+    
+    return '';
+  };
+
+  const labelMap = {
+    'INBOX': 'inbox',
+    'SENT': 'sent', 
+    'DRAFT': 'drafts',
+    'STARRED': 'starred',
+    'TRASH': 'trash'
+  };
+
+  const folder = gmailMessage.labelIds?.find(label => labelMap[label]) || 'inbox';
+  const mappedFolder = labelMap[folder] || 'inbox';
+
+  return {
+    Id: parseInt(gmailMessage.id.slice(-8), 16), // Convert Gmail ID to integer
+    from: getHeader('From').replace(/.*<(.+)>.*/, '$1'),
+    fromName: getHeader('From').replace(/^([^<]+).*/, '$1').trim(),
+    to: getHeader('To').split(',').map(email => email.trim()),
+    cc: getHeader('Cc').split(',').map(email => email.trim()).filter(Boolean),
+    bcc: getHeader('Bcc').split(',').map(email => email.trim()).filter(Boolean),
+    subject: getHeader('Subject'),
+    body: getBody(gmailMessage.payload),
+    timestamp: new Date(parseInt(gmailMessage.internalDate)).toISOString(),
+    isRead: !gmailMessage.labelIds?.includes('UNREAD'),
+    isStarred: gmailMessage.labelIds?.includes('STARRED') || false,
+    folder: mappedFolder,
+    threadId: gmailMessage.threadId,
+    hasAttachments: gmailMessage.payload?.parts?.some(part => part.filename) || false,
+    gmailId: gmailMessage.id // Keep original Gmail ID for API calls
+  };
+};
+
+// Helper to create RFC 2822 email format for sending
+const createRFC2822Email = (emailData) => {
+  const to = Array.isArray(emailData.to) ? emailData.to.join(', ') : emailData.to;
+  const cc = emailData.cc && emailData.cc.length > 0 ? 
+    (Array.isArray(emailData.cc) ? emailData.cc.join(', ') : emailData.cc) : '';
+  const bcc = emailData.bcc && emailData.bcc.length > 0 ? 
+    (Array.isArray(emailData.bcc) ? emailData.bcc.join(', ') : emailData.bcc) : '';
+
+  let email = [
+    `To: ${to}`,
+    cc ? `Cc: ${cc}` : '',
+    bcc ? `Bcc: ${bcc}` : '',
+    `Subject: ${emailData.subject || '(No Subject)'}`,
+    'Content-Type: text/plain; charset=utf-8',
+    '',
+    emailData.body || ''
+  ].filter(Boolean).join('\r\n');
+
+  return btoa(email).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 };
 
 const emailService = {
   async getAll() {
     try {
-      const apperClient = getApperClient();
-      const params = {
-        fields: [
-          {"field": {"Name": "Name"}},
-          {"field": {"Name": "from_c"}},
-          {"field": {"Name": "from_name_c"}},
-          {"field": {"Name": "to_c"}},
-          {"field": {"Name": "cc_c"}},
-          {"field": {"Name": "bcc_c"}},
-          {"field": {"Name": "subject_c"}},
-          {"field": {"Name": "body_c"}},
-          {"field": {"Name": "timestamp_c"}},
-          {"field": {"Name": "is_read_c"}},
-          {"field": {"Name": "is_starred_c"}},
-          {"field": {"Name": "folder_c"}},
-          {"field": {"Name": "thread_id_c"}},
-          {"field": {"Name": "has_attachments_c"}}
-        ],
-        orderBy: [{"fieldName": "timestamp_c", "sorttype": "DESC"}],
-        pagingInfo: {"limit": 100, "offset": 0}
-      };
+      const gmail = await ensureGmailAuth();
       
-      const response = await apperClient.fetchRecords('email_c', params);
-      
-      if (!response.success) {
-        console.error(response.message);
-        toast.error(response.message);
+      const response = await gmail.users.messages.list({
+        userId: 'me',
+        maxResults: 100,
+        q: '' // Get all messages
+      });
+
+      if (!response.result?.messages) {
         return [];
       }
-      
-      if (!response.data || response.data.length === 0) {
-        return [];
-      }
-      
-      // Transform database fields to expected format
-      return response.data.map(email => ({
-        Id: email.Id,
-        from: email.from_c || "",
-        fromName: email.from_name_c || "",
-        to: email.to_c ? (typeof email.to_c === 'string' ? email.to_c.split(',').map(e => e.trim()) : email.to_c) : [],
-        cc: email.cc_c ? (typeof email.cc_c === 'string' ? email.cc_c.split(',').map(e => e.trim()) : email.cc_c) : [],
-        bcc: email.bcc_c ? (typeof email.bcc_c === 'string' ? email.bcc_c.split(',').map(e => e.trim()) : email.bcc_c) : [],
-        subject: email.subject_c || "",
-        body: email.body_c || "",
-        timestamp: email.timestamp_c || new Date().toISOString(),
-        isRead: email.is_read_c || false,
-        isStarred: email.is_starred_c || false,
-        folder: email.folder_c || "inbox",
-        threadId: email.thread_id_c || "",
-        hasAttachments: email.has_attachments_c || false
-      }));
+
+      // Get full message details for each message
+      const messages = await Promise.all(
+        response.result.messages.map(async (msg) => {
+          const fullMessage = await gmail.users.messages.get({
+            userId: 'me',
+            id: msg.id,
+            format: 'full'
+          });
+          return convertGmailMessage(fullMessage.result);
+        })
+      );
+
+      return messages.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     } catch (error) {
       console.error("Error fetching emails:", error);
+      toast.error("Failed to fetch emails from Gmail");
       return [];
     }
   },
 
-  async getById(id) {
+async getById(id) {
     try {
-      const apperClient = getApperClient();
-      const params = {
-        fields: [
-          {"field": {"Name": "Name"}},
-          {"field": {"Name": "from_c"}},
-          {"field": {"Name": "from_name_c"}},
-          {"field": {"Name": "to_c"}},
-          {"field": {"Name": "cc_c"}},
-          {"field": {"Name": "bcc_c"}},
-          {"field": {"Name": "subject_c"}},
-          {"field": {"Name": "body_c"}},
-          {"field": {"Name": "timestamp_c"}},
-          {"field": {"Name": "is_read_c"}},
-          {"field": {"Name": "is_starred_c"}},
-          {"field": {"Name": "folder_c"}},
-          {"field": {"Name": "thread_id_c"}},
-          {"field": {"Name": "has_attachments_c"}}
-        ]
-      };
+      const gmail = await ensureGmailAuth();
       
-      const response = await apperClient.getRecordById('email_c', parseInt(id), params);
+      // First try to find by our converted ID, then search all messages
+      const allMessages = await this.getAll();
+      const emailById = allMessages.find(email => email.Id === parseInt(id));
       
-      if (!response.success || !response.data) {
-        throw new Error("Email not found");
+      if (emailById && emailById.gmailId) {
+        // Get full message using Gmail ID
+        const response = await gmail.users.messages.get({
+          userId: 'me',
+          id: emailById.gmailId,
+          format: 'full'
+        });
+        
+        return convertGmailMessage(response.result);
       }
       
-      const email = response.data;
-      // Transform database fields to expected format
-      return {
-        Id: email.Id,
-        from: email.from_c || "",
-        fromName: email.from_name_c || "",
-        to: email.to_c ? (typeof email.to_c === 'string' ? email.to_c.split(',').map(e => e.trim()) : email.to_c) : [],
-        cc: email.cc_c ? (typeof email.cc_c === 'string' ? email.cc_c.split(',').map(e => e.trim()) : email.cc_c) : [],
-        bcc: email.bcc_c ? (typeof email.bcc_c === 'string' ? email.bcc_c.split(',').map(e => e.trim()) : email.bcc_c) : [],
-        subject: email.subject_c || "",
-        body: email.body_c || "",
-        timestamp: email.timestamp_c || new Date().toISOString(),
-        isRead: email.is_read_c || false,
-        isStarred: email.is_starred_c || false,
-        folder: email.folder_c || "inbox",
-        threadId: email.thread_id_c || "",
-        hasAttachments: email.has_attachments_c || false
-      };
+      throw new Error("Email not found");
     } catch (error) {
       console.error(`Error fetching email ${id}:`, error);
       throw new Error("Email not found");
     }
   },
 
-  async getByFolder(folder) {
+async getByFolder(folder) {
     try {
-      const apperClient = getApperClient();
-      const params = {
-        fields: [
-          {"field": {"Name": "Name"}},
-          {"field": {"Name": "from_c"}},
-          {"field": {"Name": "from_name_c"}},
-          {"field": {"Name": "to_c"}},
-          {"field": {"Name": "cc_c"}},
-          {"field": {"Name": "bcc_c"}},
-          {"field": {"Name": "subject_c"}},
-          {"field": {"Name": "body_c"}},
-          {"field": {"Name": "timestamp_c"}},
-          {"field": {"Name": "is_read_c"}},
-          {"field": {"Name": "is_starred_c"}},
-          {"field": {"Name": "folder_c"}},
-          {"field": {"Name": "thread_id_c"}},
-          {"field": {"Name": "has_attachments_c"}}
-        ],
-        orderBy: [{"fieldName": "timestamp_c", "sorttype": "DESC"}],
-        pagingInfo: {"limit": 100, "offset": 0}
+      const gmail = await ensureGmailAuth();
+      
+      const folderLabelMap = {
+        'inbox': 'INBOX',
+        'sent': 'SENT',
+        'drafts': 'DRAFT',
+        'starred': 'STARRED',
+        'trash': 'TRASH'
       };
-      
-      if (folder === "starred") {
-        params.where = [{"FieldName": "is_starred_c", "Operator": "ExactMatch", "Values": [true]}];
+
+      let query = '';
+      if (folder === 'starred') {
+        query = 'is:starred';
       } else {
-        params.where = [{"FieldName": "folder_c", "Operator": "ExactMatch", "Values": [folder]}];
+        const gmailLabel = folderLabelMap[folder];
+        if (gmailLabel) {
+          query = `label:${gmailLabel}`;
+        }
       }
-      
-      const response = await apperClient.fetchRecords('email_c', params);
-      
-      if (!response.success) {
-        console.error(response.message);
+
+      const response = await gmail.users.messages.list({
+        userId: 'me',
+        maxResults: 100,
+        q: query
+      });
+
+      if (!response.result?.messages) {
         return [];
       }
-      
-      if (!response.data || response.data.length === 0) {
-        return [];
-      }
-      
-      // Transform database fields to expected format
-      return response.data.map(email => ({
-        Id: email.Id,
-        from: email.from_c || "",
-        fromName: email.from_name_c || "",
-        to: email.to_c ? (typeof email.to_c === 'string' ? email.to_c.split(',').map(e => e.trim()) : email.to_c) : [],
-        cc: email.cc_c ? (typeof email.cc_c === 'string' ? email.cc_c.split(',').map(e => e.trim()) : email.cc_c) : [],
-        bcc: email.bcc_c ? (typeof email.bcc_c === 'string' ? email.bcc_c.split(',').map(e => e.trim()) : email.bcc_c) : [],
-        subject: email.subject_c || "",
-        body: email.body_c || "",
-        timestamp: email.timestamp_c || new Date().toISOString(),
-        isRead: email.is_read_c || false,
-        isStarred: email.is_starred_c || false,
-        folder: email.folder_c || "inbox",
-        threadId: email.thread_id_c || "",
-        hasAttachments: email.has_attachments_c || false
-      }));
+
+      // Get full message details for each message
+      const messages = await Promise.all(
+        response.result.messages.map(async (msg) => {
+          const fullMessage = await gmail.users.messages.get({
+            userId: 'me',
+            id: msg.id,
+            format: 'full'
+          });
+          return convertGmailMessage(fullMessage.result);
+        })
+      );
+
+      return messages.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     } catch (error) {
       console.error("Error fetching emails by folder:", error);
+      toast.error(`Failed to fetch ${folder} emails from Gmail`);
       return [];
     }
   },
 
-  async search(query) {
+async search(query) {
     try {
-      const apperClient = getApperClient();
-      const searchTerm = query.trim().toLowerCase();
+      const gmail = await ensureGmailAuth();
+      const searchTerm = query.trim();
       
-      const params = {
-        fields: [
-          {"field": {"Name": "Name"}},
-          {"field": {"Name": "from_c"}},
-          {"field": {"Name": "from_name_c"}},
-          {"field": {"Name": "to_c"}},
-          {"field": {"Name": "cc_c"}},
-          {"field": {"Name": "bcc_c"}},
-          {"field": {"Name": "subject_c"}},
-          {"field": {"Name": "body_c"}},
-          {"field": {"Name": "timestamp_c"}},
-          {"field": {"Name": "is_read_c"}},
-          {"field": {"Name": "is_starred_c"}},
-          {"field": {"Name": "folder_c"}},
-          {"field": {"Name": "thread_id_c"}},
-          {"field": {"Name": "has_attachments_c"}}
-        ],
-        whereGroups: [{
-          "operator": "OR",
-          "subGroups": [
-            {
-              "conditions": [
-                {"fieldName": "subject_c", "operator": "Contains", "values": [searchTerm]}
-              ],
-              "operator": "OR"
-            },
-            {
-              "conditions": [
-                {"fieldName": "body_c", "operator": "Contains", "values": [searchTerm]}
-              ],
-              "operator": "OR"
-            },
-            {
-              "conditions": [
-                {"fieldName": "from_name_c", "operator": "Contains", "values": [searchTerm]}
-              ],
-              "operator": "OR"
-            },
-            {
-              "conditions": [
-                {"fieldName": "from_c", "operator": "Contains", "values": [searchTerm]}
-              ],
-              "operator": "OR"
-            }
-          ]
-        }],
-        orderBy: [{"fieldName": "timestamp_c", "sorttype": "DESC"}],
-        pagingInfo: {"limit": 100, "offset": 0}
-      };
+      if (!searchTerm) {
+        return this.getAll();
+      }
+
+      // Use Gmail's powerful search syntax
+      const gmailQuery = `{${searchTerm}} OR from:${searchTerm} OR subject:${searchTerm}`;
       
-      const response = await apperClient.fetchRecords('email_c', params);
-      
-      if (!response.success) {
-        console.error(response.message);
+      const response = await gmail.users.messages.list({
+        userId: 'me',
+        maxResults: 100,
+        q: gmailQuery
+      });
+
+      if (!response.result?.messages) {
         return [];
       }
-      
-      if (!response.data || response.data.length === 0) {
-        return [];
-      }
-      
-      // Transform database fields to expected format
-      return response.data.map(email => ({
-        Id: email.Id,
-        from: email.from_c || "",
-        fromName: email.from_name_c || "",
-        to: email.to_c ? (typeof email.to_c === 'string' ? email.to_c.split(',').map(e => e.trim()) : email.to_c) : [],
-        cc: email.cc_c ? (typeof email.cc_c === 'string' ? email.cc_c.split(',').map(e => e.trim()) : email.cc_c) : [],
-        bcc: email.bcc_c ? (typeof email.bcc_c === 'string' ? email.bcc_c.split(',').map(e => e.trim()) : email.bcc_c) : [],
-        subject: email.subject_c || "",
-        body: email.body_c || "",
-        timestamp: email.timestamp_c || new Date().toISOString(),
-        isRead: email.is_read_c || false,
-        isStarred: email.is_starred_c || false,
-        folder: email.folder_c || "inbox",
-        threadId: email.thread_id_c || "",
-        hasAttachments: email.has_attachments_c || false
-      }));
+
+      // Get full message details for each message
+      const messages = await Promise.all(
+        response.result.messages.map(async (msg) => {
+          const fullMessage = await gmail.users.messages.get({
+            userId: 'me',
+            id: msg.id,
+            format: 'full'
+          });
+          return convertGmailMessage(fullMessage.result);
+        })
+      );
+
+      return messages.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     } catch (error) {
       console.error("Error searching emails:", error);
+      toast.error("Failed to search emails in Gmail");
       return [];
     }
   },
 
-  async create(emailData) {
+async create(emailData) {
     try {
-      const apperClient = getApperClient();
+      const gmail = await ensureGmailAuth();
       
-      // Transform to database field format
-      const dbData = {
-        Name: emailData.subject || "New Email",
-        from_c: "me@mailflow.com",
-        from_name_c: "Me",
-        to_c: Array.isArray(emailData.to) ? emailData.to.join(", ") : (emailData.to || ""),
-        cc_c: Array.isArray(emailData.cc) ? emailData.cc.join(", ") : (emailData.cc || ""),
-        bcc_c: Array.isArray(emailData.bcc) ? emailData.bcc.join(", ") : (emailData.bcc || ""),
-        subject_c: emailData.subject || "",
-        body_c: emailData.body || "",
-        timestamp_c: new Date().toISOString(),
-        is_read_c: true,
-        is_starred_c: false,
-        folder_c: emailData.folder || "sent",
-        thread_id_c: `thread_${Date.now()}`,
-        has_attachments_c: false
-      };
+      // Create RFC 2822 formatted email
+      const rfcEmail = createRFC2822Email(emailData);
       
-      const params = {
-        records: [dbData]
-      };
-      
-      const response = await apperClient.createRecord('email_c', params);
-      
-      if (!response.success) {
-        console.error(response.message);
-        toast.error(response.message);
-        throw new Error(response.message);
-      }
-      
-      if (response.results) {
-        const successful = response.results.filter(r => r.success);
-        const failed = response.results.filter(r => !r.success);
-        
-        if (failed.length > 0) {
-          console.error(`Failed to create email:${JSON.stringify(failed)}`);
-          failed.forEach(record => {
-            if (record.message) toast.error(record.message);
-          });
+      const response = await gmail.users.messages.send({
+        userId: 'me',
+        resource: {
+          raw: rfcEmail
         }
-        
-        if (successful.length > 0) {
-          this.notifyChange();
-          const created = successful[0].data;
-          return {
-            Id: created.Id,
-            from: created.from_c || "",
-            fromName: created.from_name_c || "",
-            to: created.to_c ? created.to_c.split(',').map(e => e.trim()) : [],
-            cc: created.cc_c ? created.cc_c.split(',').map(e => e.trim()) : [],
-            bcc: created.bcc_c ? created.bcc_c.split(',').map(e => e.trim()) : [],
-            subject: created.subject_c || "",
-            body: created.body_c || "",
-            timestamp: created.timestamp_c || new Date().toISOString(),
-            isRead: created.is_read_c || false,
-            isStarred: created.is_starred_c || false,
-            folder: created.folder_c || "sent",
-            threadId: created.thread_id_c || "",
-            hasAttachments: created.has_attachments_c || false
-          };
-        }
+      });
+
+      if (!response.result?.id) {
+        throw new Error("Failed to send email");
       }
+
+      // Get the sent message details
+      const sentMessage = await gmail.users.messages.get({
+        userId: 'me',
+        id: response.result.id,
+        format: 'full'
+      });
+
+      this.notifyChange();
+      toast.success("Email sent successfully!");
       
-      throw new Error("Failed to create email");
+      return convertGmailMessage(sentMessage.result);
     } catch (error) {
       console.error("Error creating email:", error);
+      toast.error("Failed to send email via Gmail");
       throw error;
     }
   },
 
-  async update(id, updates) {
+async update(id, updates) {
     try {
-      const apperClient = getApperClient();
+      const gmail = await ensureGmailAuth();
       
-      // Transform updates to database field format
-      const dbUpdates = {
-        Id: parseInt(id)
-      };
-      
-      if (updates.hasOwnProperty('isRead')) dbUpdates.is_read_c = updates.isRead;
-      if (updates.hasOwnProperty('isStarred')) dbUpdates.is_starred_c = updates.isStarred;
-      if (updates.hasOwnProperty('folder')) dbUpdates.folder_c = updates.folder;
-      if (updates.hasOwnProperty('subject')) dbUpdates.subject_c = updates.subject;
-      if (updates.hasOwnProperty('body')) dbUpdates.body_c = updates.body;
-      if (updates.hasOwnProperty('to')) dbUpdates.to_c = Array.isArray(updates.to) ? updates.to.join(", ") : updates.to;
-      if (updates.hasOwnProperty('cc')) dbUpdates.cc_c = Array.isArray(updates.cc) ? updates.cc.join(", ") : updates.cc;
-      if (updates.hasOwnProperty('bcc')) dbUpdates.bcc_c = Array.isArray(updates.bcc) ? updates.bcc.join(", ") : updates.bcc;
-      
-      const params = {
-        records: [dbUpdates]
-      };
-      
-      const response = await apperClient.updateRecord('email_c', params);
-      
-      if (!response.success) {
-        console.error(response.message);
-        toast.error(response.message);
-        throw new Error(response.message);
+      // Get the current email first
+      const email = await this.getById(id);
+      if (!email?.gmailId) {
+        throw new Error("Gmail email not found");
       }
-      
-      if (response.results) {
-        const successful = response.results.filter(r => r.success);
-        const failed = response.results.filter(r => !r.success);
-        
-        if (failed.length > 0) {
-          console.error(`Failed to update email:${JSON.stringify(failed)}`);
-          failed.forEach(record => {
-            if (record.message) toast.error(record.message);
-          });
-        }
-        
-        if (successful.length > 0) {
-          this.notifyChange();
-          const updated = successful[0].data;
-          return {
-            Id: updated.Id,
-            from: updated.from_c || "",
-            fromName: updated.from_name_c || "",
-            to: updated.to_c ? updated.to_c.split(',').map(e => e.trim()) : [],
-            cc: updated.cc_c ? updated.cc_c.split(',').map(e => e.trim()) : [],
-            bcc: updated.bcc_c ? updated.bcc_c.split(',').map(e => e.trim()) : [],
-            subject: updated.subject_c || "",
-            body: updated.body_c || "",
-            timestamp: updated.timestamp_c || new Date().toISOString(),
-            isRead: updated.is_read_c || false,
-            isStarred: updated.is_starred_c || false,
-            folder: updated.folder_c || "inbox",
-            threadId: updated.thread_id_c || "",
-            hasAttachments: updated.has_attachments_c || false
-          };
+
+      const labelsToAdd = [];
+      const labelsToRemove = [];
+
+      // Handle read/unread status
+      if (updates.hasOwnProperty('isRead')) {
+        if (updates.isRead) {
+          labelsToRemove.push('UNREAD');
+        } else {
+          labelsToAdd.push('UNREAD');
         }
       }
+
+      // Handle starred status
+      if (updates.hasOwnProperty('isStarred')) {
+        if (updates.isStarred) {
+          labelsToAdd.push('STARRED');
+        } else {
+          labelsToRemove.push('STARRED');
+        }
+      }
+
+      // Handle folder changes (move between labels)
+      if (updates.hasOwnProperty('folder')) {
+        const folderLabelMap = {
+          'inbox': 'INBOX',
+          'sent': 'SENT',
+          'drafts': 'DRAFT',
+          'starred': 'STARRED',
+          'trash': 'TRASH'
+        };
+
+        // Remove current folder labels and add new one
+        const currentFolder = folderLabelMap[email.folder];
+        const newFolder = folderLabelMap[updates.folder];
+
+        if (currentFolder && currentFolder !== newFolder) {
+          labelsToRemove.push(currentFolder);
+        }
+        if (newFolder) {
+          labelsToAdd.push(newFolder);
+        }
+      }
+
+      // Apply label changes
+      if (labelsToAdd.length > 0 || labelsToRemove.length > 0) {
+        await gmail.users.messages.modify({
+          userId: 'me',
+          id: email.gmailId,
+          resource: {
+            addLabelIds: labelsToAdd,
+            removeLabelIds: labelsToRemove
+          }
+        });
+      }
+
+      this.notifyChange();
       
-      throw new Error("Failed to update email");
+      // Return updated email
+      return this.getById(id);
     } catch (error) {
       console.error("Error updating email:", error);
+      toast.error("Failed to update email in Gmail");
       throw error;
     }
   },
 
-  async delete(id) {
+async delete(id) {
     try {
-      const apperClient = getApperClient();
+      const gmail = await ensureGmailAuth();
       
-      // First get the current email to check folder
+      // Get the current email to check its current state
       const email = await this.getById(id);
       
+      if (!email?.gmailId) {
+        throw new Error("Gmail email not found");
+      }
+
       if (email.folder === "trash") {
-        // Permanently delete
-        const params = {
-          RecordIds: [parseInt(id)]
-        };
-        
-        const response = await apperClient.deleteRecord('email_c', params);
-        
-        if (!response.success) {
-          console.error(response.message);
-          toast.error(response.message);
-          throw new Error(response.message);
-        }
+        // Permanently delete from Gmail
+        await gmail.users.messages.delete({
+          userId: 'me',
+          id: email.gmailId
+        });
         
         this.notifyChange();
+        toast.success("Email permanently deleted");
         return { success: true, message: "Email permanently deleted" };
       } else {
-        // Move to trash
-        const updated = await this.update(id, { folder: "trash" });
-        return updated;
+        // Move to trash (add TRASH label)
+        await gmail.users.messages.modify({
+          userId: 'me',
+          id: email.gmailId,
+          resource: {
+            addLabelIds: ['TRASH'],
+            removeLabelIds: ['INBOX', 'SENT', 'DRAFT']
+          }
+        });
+        
+        this.notifyChange();
+        return this.getById(id);
       }
     } catch (error) {
       console.error("Error deleting email:", error);
+      toast.error("Failed to delete email in Gmail");
       throw error;
     }
   },
@@ -473,30 +463,59 @@ const emailService = {
     }
   },
 
-  async saveDraft(draftData) {
+async saveDraft(draftData) {
     try {
+      const gmail = await ensureGmailAuth();
+      
       // Check for existing draft with same subject
       const existingDrafts = await this.getByFolder("drafts");
       const existingDraft = existingDrafts.find(email => 
         email.subject === draftData.subject && draftData.subject.trim() !== ""
       );
 
-      if (existingDraft) {
-        return this.update(existingDraft.Id, {
-          to: draftData.to || [],
-          cc: draftData.cc || [],
-          bcc: draftData.bcc || [],
-          subject: draftData.subject || "",
-          body: draftData.body || ""
+      const rfcEmail = createRFC2822Email(draftData);
+
+      if (existingDraft?.gmailId) {
+        // Update existing draft
+        const response = await gmail.users.drafts.update({
+          userId: 'me',
+          id: existingDraft.gmailId,
+          resource: {
+            message: {
+              raw: rfcEmail
+            }
+          }
         });
+
+        this.notifyChange();
+        return this.getById(existingDraft.Id);
       } else {
-        return this.create({
-          ...draftData,
-          folder: "drafts"
+        // Create new draft
+        const response = await gmail.users.drafts.create({
+          userId: 'me',
+          resource: {
+            message: {
+              raw: rfcEmail
+            }
+          }
         });
+
+        this.notifyChange();
+        
+        // Get the created draft details
+        if (response.result?.message?.id) {
+          const draftMessage = await gmail.users.messages.get({
+            userId: 'me',
+            id: response.result.message.id,
+            format: 'full'
+          });
+          
+          return convertGmailMessage(draftMessage.result);
+        }
       }
     } catch (error) {
       console.error("Error saving draft:", error);
+      toast.error("Failed to save draft in Gmail");
       throw error;
     }
   },
