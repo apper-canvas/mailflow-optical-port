@@ -11,8 +11,9 @@ const Sidebar = forwardRef(({ isOpen, onClose }, ref) => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  useImperativeHandle(ref, () => ({
-    loadFolders
+useImperativeHandle(ref, () => ({
+    loadFolders,
+    refreshCounts: loadFolders // Alias for App.jsx callback compatibility
   }));
 
   useEffect(() => {
