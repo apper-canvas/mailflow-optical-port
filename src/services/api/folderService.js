@@ -10,8 +10,22 @@ const getApperClient = () => {
   });
 };
 
-// System folders - these are hardcoded as they represent the email application structure
-const systemFolders = [
+// Helper function to map database folder to UI format
+const mapFolderFromDatabase = (folder) => {
+  if (!folder) return null;
+  
+  return {
+    Id: folder.Id,
+    name: folder.name_c || folder.folder_name_c || "Unknown",
+    icon: folder.icon_c || "Folder",
+    type: folder.type_c || "custom",
+    slug: folder.slug_c || folder.folder_slug_c || folder.name_c?.toLowerCase() || "unknown",
+    count: 0 // Will be calculated separately
+  };
+};
+
+// Fallback system folders in case database is empty
+const fallbackSystemFolders = [
   {
     Id: 1,
     name: "Inbox",
@@ -50,13 +64,41 @@ const systemFolders = [
 ];
 
 const folderService = {
-  async getAll() {
+async getAll() {
     try {
-// Get all emails to calculate counts
+      const apperClient = getApperClient();
+      
+      // First, try to get folders from database
+      const folderParams = {
+        fields: [
+          {"field": {"Name": "Id"}},
+          {"field": {"Name": "name_c"}},
+          {"field": {"Name": "folder_name_c"}},
+          {"field": {"Name": "icon_c"}},
+          {"field": {"Name": "type_c"}},
+          {"field": {"Name": "slug_c"}},
+          {"field": {"Name": "folder_slug_c"}}
+        ],
+        orderBy: [{"fieldName": "Id", "sorttype": "ASC"}],
+        pagingInfo: {"limit": 50, "offset": 0}
+      };
+
+      const folderResponse = await apperClient.fetchRecords("folder_c", folderParams);
+      
+      let folders = [];
+      if (folderResponse.success && folderResponse.data && folderResponse.data.length > 0) {
+        folders = folderResponse.data.map(mapFolderFromDatabase);
+      } else {
+        // Use fallback system folders if database is empty
+        console.log("No folders found in database, using fallback system folders");
+        folders = [...fallbackSystemFolders];
+      }
+
+      // Get all emails to calculate counts
       const emails = await emailService.getAll();
       
       // Calculate counts for each folder
-      const foldersWithCounts = systemFolders.map(folder => {
+      const foldersWithCounts = folders.map(folder => {
         let count = 0;
         
         if (folder.slug === "starred") {
@@ -79,32 +121,88 @@ const folderService = {
       return foldersWithCounts;
     } catch (error) {
       console.error("Error fetching folders:", error);
-      return systemFolders.map(folder => ({ ...folder, count: 0 }));
+      return fallbackSystemFolders.map(folder => ({ ...folder, count: 0 }));
     }
   },
 
-  async getById(id) {
+async getById(id) {
     try {
-      const folder = systemFolders.find(folder => folder.Id === parseInt(id));
-      if (!folder) {
-        throw new Error("Folder not found");
+      const apperClient = getApperClient();
+      
+      const params = {
+        fields: [
+          {"field": {"Name": "Id"}},
+          {"field": {"Name": "name_c"}},
+          {"field": {"Name": "folder_name_c"}},
+          {"field": {"Name": "icon_c"}},
+          {"field": {"Name": "type_c"}},
+          {"field": {"Name": "slug_c"}},
+          {"field": {"Name": "folder_slug_c"}}
+        ]
+      };
+
+      const response = await apperClient.getRecordById("folder_c", parseInt(id), params);
+      
+      if (response.success && response.data) {
+        return mapFolderFromDatabase(response.data);
+      } else {
+        // Fallback to system folders
+        const folder = fallbackSystemFolders.find(folder => folder.Id === parseInt(id));
+        if (!folder) {
+          throw new Error("Folder not found");
+        }
+        return { ...folder };
       }
-      return { ...folder };
     } catch (error) {
       console.error(`Error fetching folder ${id}:`, error);
+      // Try fallback system folders
+      const folder = fallbackSystemFolders.find(folder => folder.Id === parseInt(id));
+      if (folder) {
+        return { ...folder };
+      }
       throw new Error("Folder not found");
     }
   },
 
-  async getBySlug(slug) {
+async getBySlug(slug) {
     try {
-      const folder = systemFolders.find(folder => folder.slug === slug);
-      if (!folder) {
-        throw new Error("Folder not found");
+      const apperClient = getApperClient();
+      
+      const params = {
+        fields: [
+          {"field": {"Name": "Id"}},
+          {"field": {"Name": "name_c"}},
+          {"field": {"Name": "folder_name_c"}},
+          {"field": {"Name": "icon_c"}},
+          {"field": {"Name": "type_c"}},
+          {"field": {"Name": "slug_c"}},
+          {"field": {"Name": "folder_slug_c"}}
+        ],
+        where: [
+          {"FieldName": "slug_c", "Operator": "ExactMatch", "Values": [slug]}
+        ],
+        pagingInfo: {"limit": 1, "offset": 0}
+      };
+
+      const response = await apperClient.fetchRecords("folder_c", params);
+      
+      if (response.success && response.data && response.data.length > 0) {
+        return mapFolderFromDatabase(response.data[0]);
+      } else {
+        // Fallback to system folders
+        const folder = fallbackSystemFolders.find(folder => folder.slug === slug);
+        if (!folder) {
+          throw new Error("Folder not found");
+        }
+        return { ...folder };
       }
-      return { ...folder };
     } catch (error) {
       console.error(`Error fetching folder ${slug}:`, error);
+      // Try fallback system folders
+      const folder = fallbackSystemFolders.find(folder => folder.slug === slug);
+      if (folder) {
+        return { ...folder };
+      }
       throw new Error("Folder not found");
     }
   }
