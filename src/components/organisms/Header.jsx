@@ -4,7 +4,7 @@ import SearchBar from "@/components/molecules/SearchBar";
 
 const Header = ({ onMenuClick, onSearch, title = "Inbox" }) => {
   return (
-    <header className="bg-white border-b border-gray-200 px-4 py-3">
+<header className="bg-white border-b border-gray-200 px-3 sm:px-4 py-3 flex-shrink-0">
       <div className="flex items-center gap-4">
         <button
           onClick={onMenuClick}
@@ -13,7 +13,7 @@ const Header = ({ onMenuClick, onSearch, title = "Inbox" }) => {
           <ApperIcon name="Menu" size={20} />
         </button>
         
-        <div className="flex-1 max-w-2xl">
+<div className="flex-1 max-w-2xl mx-2 sm:mx-4">
           <SearchBar onSearch={onSearch} />
         </div>
 

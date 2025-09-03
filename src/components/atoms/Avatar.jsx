@@ -20,10 +20,10 @@ const Avatar = ({
     return email ? email[0].toUpperCase() : "?";
   };
 
-  const sizes = {
-    sm: "w-8 h-8 text-xs",
-    md: "w-10 h-10 text-sm",
-    lg: "w-12 h-12 text-base"
+const sizes = {
+    sm: "w-7 h-7 sm:w-8 sm:h-8 text-xs",
+    md: "w-9 h-9 sm:w-10 sm:h-10 text-xs sm:text-sm",
+    lg: "w-11 h-11 sm:w-12 sm:h-12 text-sm sm:text-base"
   };
 
   const colors = [

@@ -111,7 +111,7 @@ const EmailViewer = () => {
   }
 
   return (
-    <div className="bg-white h-full flex flex-col">
+<div className="bg-white h-full flex flex-col overflow-hidden">
       <div className="border-b border-gray-200 p-4">
         <div className="flex items-center justify-between mb-4">
           <Button
@@ -168,7 +168,7 @@ const EmailViewer = () => {
         </div>
       </div>
 
-      <div className="flex-1 p-6 overflow-auto custom-scrollbar">
+<div className="flex-1 p-4 sm:p-6 overflow-auto custom-scrollbar">
         <div className="prose prose-sm max-w-none">
           <div className="text-gray-700 leading-relaxed whitespace-pre-wrap">
             {formatEmailBody(email.body)}

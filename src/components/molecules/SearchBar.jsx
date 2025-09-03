@@ -25,14 +25,15 @@ const SearchBar = ({ onSearch, placeholder = "Search emails...", className }) =>
           size={16} 
           className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" 
         />
-        <Input
+<Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           placeholder={placeholder}
           className={cn(
-            "pl-10 pr-10 transition-all duration-200",
+            "pl-10 pr-10 transition-all duration-200 text-sm sm:text-base",
+            "h-9 sm:h-10",
             isFocused && "ring-2 ring-primary/20 border-primary"
           )}
         />

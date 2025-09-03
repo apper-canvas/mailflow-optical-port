@@ -33,7 +33,7 @@ const Sidebar = ({ isOpen, onClose }) => {
   };
 
   const sidebarContent = (
-    <div className="flex flex-col h-full bg-white">
+<div className="flex flex-col h-full bg-white overflow-hidden">
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
@@ -100,7 +100,7 @@ const Sidebar = ({ isOpen, onClose }) => {
 
   // Desktop sidebar - static
   const desktopSidebar = (
-    <div className="hidden lg:flex w-64 border-r border-gray-200 bg-white">
+<div className="hidden lg:flex w-64 border-r border-gray-200 bg-white flex-shrink-0">
       {sidebarContent}
     </div>
   );
@@ -123,7 +123,7 @@ const Sidebar = ({ isOpen, onClose }) => {
             animate={{ x: 0 }}
             exit={{ x: "-100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="lg:hidden fixed left-0 top-0 bottom-0 w-64 z-50"
+className="lg:hidden fixed left-0 top-0 bottom-0 w-64 sm:w-72 z-50"
           >
             {sidebarContent}
           </motion.div>

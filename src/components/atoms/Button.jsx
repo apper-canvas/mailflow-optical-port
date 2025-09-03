@@ -23,10 +23,10 @@ const Button = forwardRef(({
     success: "bg-green-500 hover:bg-green-600 text-white shadow-sm hover:shadow-md focus:ring-green-500/20"
   };
 
-  const sizes = {
-    sm: "px-3 py-1.5 text-sm rounded-md gap-1.5",
-    md: "px-4 py-2 text-sm rounded-md gap-2",
-    lg: "px-6 py-3 text-base rounded-lg gap-2"
+const sizes = {
+    sm: "px-3 py-2 sm:py-1.5 text-sm rounded-md gap-1.5 min-h-[44px] sm:min-h-[36px]",
+    md: "px-4 py-2.5 sm:py-2 text-sm rounded-md gap-2 min-h-[44px] sm:min-h-[40px]",
+    lg: "px-6 py-3 text-base rounded-lg gap-2 min-h-[48px]"
   };
 
   return (

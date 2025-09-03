@@ -19,13 +19,13 @@ const EmailListPage = ({ onMenuClick }) => {
   };
 
   return (
-    <div className="flex-1 flex flex-col">
+<div className="flex-1 flex flex-col overflow-hidden">
       <Header 
         onMenuClick={onMenuClick}
         onSearch={setSearchQuery}
         title={getFolderTitle()}
       />
-      <div className="flex-1">
+<div className="flex-1 overflow-hidden">
         <EmailList searchQuery={searchQuery} />
       </div>
     </div>

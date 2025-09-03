@@ -7,7 +7,7 @@ const ComposePage = () => {
   const { replyTo, forwardEmail } = location.state || {};
 
   return (
-    <div className="flex-1">
+<div className="flex-1 overflow-hidden">
       <EmailComposer 
         replyTo={replyTo} 
         forwardEmail={forwardEmail}

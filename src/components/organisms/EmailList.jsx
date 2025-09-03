@@ -167,7 +167,7 @@ const EmailList = ({ searchQuery }) => {
   }
 
   return (
-    <div className="bg-white">
+<div className="bg-white overflow-hidden">
       <div className="border-b border-gray-200 px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -200,7 +200,7 @@ const EmailList = ({ searchQuery }) => {
             )}
             onClick={() => handleEmailClick(email)}
           >
-            <div className="p-4">
+<div className="p-3 sm:p-4">
               <div className="flex items-start gap-4">
                 <label className="flex items-center mt-1" onClick={(e) => e.stopPropagation()}>
                   <input
@@ -214,7 +214,7 @@ const EmailList = ({ searchQuery }) => {
                 <Avatar name={email.fromName} email={email.from} size="md" />
 
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-4">
+<div className="flex items-start justify-between gap-2 sm:gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <span className={cn(
@@ -244,7 +244,7 @@ const EmailList = ({ searchQuery }) => {
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-3 flex-shrink-0">
+<div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                       <span className="text-sm text-gray-500 hidden sm:block">
                         {formatTimestamp(email.timestamp)}
                       </span>

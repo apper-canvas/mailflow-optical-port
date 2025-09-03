@@ -132,7 +132,7 @@ const EmailComposer = ({ replyTo, forwardEmail, onClose }) => {
   };
 
   return (
-    <div className="bg-white h-full flex flex-col">
+<div className="bg-white h-full flex flex-col overflow-hidden">
       <div className="border-b border-gray-200 p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -163,7 +163,7 @@ const EmailComposer = ({ replyTo, forwardEmail, onClose }) => {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col overflow-hidden">
+<div className="flex-1 flex flex-col overflow-hidden min-h-0">
         <div className="p-4 space-y-4 border-b border-gray-200">
           <div className="space-y-3">
             <div className="flex items-center gap-2">
@@ -230,7 +230,7 @@ const EmailComposer = ({ replyTo, forwardEmail, onClose }) => {
           </div>
         </div>
 
-        <div className="flex-1 p-4">
+<div className="flex-1 p-3 sm:p-4 min-h-0">
           <textarea
             value={formData.body}
             onChange={(e) => handleChange("body", e.target.value)}
@@ -239,8 +239,8 @@ const EmailComposer = ({ replyTo, forwardEmail, onClose }) => {
           />
         </div>
 
-        <div className="border-t border-gray-200 p-4">
-<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+<div className="border-t border-gray-200 p-3 sm:p-4 flex-shrink-0">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex items-center gap-2">
               <Button
                 onClick={handleSend}
