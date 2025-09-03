@@ -152,7 +152,24 @@ const EmailViewer = () => {
               </div>
               
 <div className="mt-2 text-sm text-gray-700">
-                <p><strong>To:</strong> {Array.isArray(email.to) ? email.to.join(", ") : email.to}</p>
+                <div className="mb-1">
+                  <strong>To:</strong>
+                  <div className="mt-1 space-y-1">
+                    {Array.isArray(email.to) ? (
+                      email.to.map((recipient, index) => (
+                        <div key={index} className="flex items-center gap-2 ml-4">
+                          <Avatar name={recipient} email={recipient} size="sm" />
+                          <span className="text-gray-700">{recipient}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="flex items-center gap-2 ml-4">
+                        <Avatar name={email.to} email={email.to} size="sm" />
+                        <span className="text-gray-700">{email.to}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
                 {email.cc && email.cc.length > 0 && (
                   <p><strong>Cc:</strong> {Array.isArray(email.cc) ? email.cc.join(", ") : email.cc}</p>
                 )}
