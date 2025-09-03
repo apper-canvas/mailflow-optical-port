@@ -33,16 +33,16 @@ const Sidebar = ({ isOpen, onClose }) => {
   };
 
   const sidebarContent = (
-<div className="flex flex-col h-full bg-white overflow-hidden">
+<div className="flex flex-col h-full bg-white overflow-hidden border-r border-gray-200">
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+<h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
             <ApperIcon name="Mail" className="text-primary" />
             MailFlow
           </h1>
-          <button
+<button
             onClick={onClose}
-            className="lg:hidden p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors duration-200"
+            className="lg:hidden p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors duration-200"
           >
             <ApperIcon name="X" size={20} />
           </button>
@@ -61,7 +61,7 @@ const Sidebar = ({ isOpen, onClose }) => {
           {loading ? (
             [...Array(5)].map((_, i) => (
               <li key={i} className="animate-pulse">
-                <div className="h-10 bg-gray-200 rounded-lg"></div>
+<div className="h-10 bg-gray-100 rounded-lg"></div>
               </li>
             ))
           ) : (
@@ -82,9 +82,9 @@ const Sidebar = ({ isOpen, onClose }) => {
                   {folder.count > 0 && (
                     <span className={cn(
                       "px-2 py-0.5 text-xs rounded-full font-medium",
-                      folder.slug === "inbox" && folder.count > 0
+folder.slug === "inbox" && folder.count > 0
                         ? "bg-primary text-white"
-                        : "bg-gray-200 text-gray-600"
+                        : "bg-gray-100 text-gray-700"
                     )}>
                       {folder.count}
                     </span>

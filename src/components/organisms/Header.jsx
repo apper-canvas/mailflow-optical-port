@@ -6,9 +6,9 @@ const Header = ({ onMenuClick, onSearch, title = "Inbox" }) => {
   return (
 <header className="bg-white border-b border-gray-200 px-3 sm:px-4 py-3 flex-shrink-0">
       <div className="flex items-center gap-4">
-        <button
+<button
           onClick={onMenuClick}
-          className="lg:hidden p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors duration-200"
+          className="lg:hidden p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors duration-200"
         >
           <ApperIcon name="Menu" size={20} />
         </button>
@@ -17,11 +17,11 @@ const Header = ({ onMenuClick, onSearch, title = "Inbox" }) => {
           <SearchBar onSearch={onSearch} />
         </div>
 
-        <div className="flex items-center gap-3">
-          <button className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors duration-200">
+<div className="flex items-center gap-3">
+          <button className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors duration-200">
             <ApperIcon name="Settings" size={20} />
-          </button>
-          <button className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors duration-200">
+</button>
+          <button className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors duration-200">
             <ApperIcon name="Bell" size={20} />
           </button>
           <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">

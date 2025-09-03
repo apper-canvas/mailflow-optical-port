@@ -3,7 +3,7 @@ import EmailViewer from "@/components/organisms/EmailViewer";
 
 const EmailViewPage = () => {
   return (
-<div className="flex-1 overflow-hidden">
+<div className="flex-1 overflow-hidden bg-white">
       <EmailViewer />
     </div>
   );

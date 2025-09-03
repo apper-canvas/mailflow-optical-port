@@ -20,7 +20,7 @@ const EmailApp = () => {
 
   return (
     <Router>
-<div className="h-screen bg-background overflow-hidden">
+<div className="h-screen bg-gray-100 overflow-hidden">
         <div className="flex h-full relative">
 <Sidebar isOpen={sidebarOpen} onClose={handleSidebarClose} />
           

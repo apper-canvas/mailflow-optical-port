@@ -19,7 +19,7 @@ const EmailListPage = ({ onMenuClick }) => {
   };
 
   return (
-<div className="flex-1 flex flex-col overflow-hidden">
+<div className="flex-1 flex flex-col overflow-hidden bg-white">
       <Header 
         onMenuClick={onMenuClick}
         onSearch={setSearchQuery}

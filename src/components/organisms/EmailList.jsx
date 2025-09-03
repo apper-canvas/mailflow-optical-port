@@ -167,8 +167,8 @@ const EmailList = ({ searchQuery }) => {
   }
 
   return (
-<div className="bg-white overflow-hidden">
-      <div className="border-b border-gray-200 px-4 py-3">
+<div className="bg-white overflow-hidden border border-gray-200">
+<div className="border-b border-gray-200 px-4 py-3 bg-white">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <label className="flex items-center">
@@ -176,13 +176,13 @@ const EmailList = ({ searchQuery }) => {
                 type="checkbox"
                 checked={selectedEmails.length === emails.length}
                 onChange={(e) => handleSelectAll(e.target.checked)}
-                className="rounded border-gray-300 text-primary focus:ring-primary/20"
+className="rounded border-gray-300 text-primary focus:ring-primary/20 bg-white"
               />
             </label>
-            <h2 className="text-lg font-semibold text-gray-900">
+<h2 className="text-lg font-semibold text-gray-900">
               {getFolderTitle()}
             </h2>
-            <span className="text-sm text-gray-500">
+<span className="text-sm text-gray-600">
               {emails.length} email{emails.length !== 1 ? "s" : ""}
             </span>
           </div>
@@ -206,8 +206,8 @@ const EmailList = ({ searchQuery }) => {
                   <input
                     type="checkbox"
                     checked={selectedEmails.includes(email.Id)}
-                    onChange={(e) => handleSelectEmail(email.Id, e.target.checked)}
-                    className="rounded border-gray-300 text-primary focus:ring-primary/20"
+onChange={(e) => handleSelectEmail(email.Id, e.target.checked)}
+                    className="rounded border-gray-300 text-primary focus:ring-primary/20 bg-white"
                   />
                 </label>
 
@@ -218,7 +218,7 @@ const EmailList = ({ searchQuery }) => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <span className={cn(
-                          "font-medium truncate",
+"font-medium truncate",
                           !email.isRead ? "font-semibold text-gray-900" : "text-gray-700"
                         )}>
                           {email.fromName || email.from}
@@ -226,26 +226,26 @@ const EmailList = ({ searchQuery }) => {
                         {!email.isRead && (
                           <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0"></div>
                         )}
-                        {email.hasAttachments && (
-                          <ApperIcon name="Paperclip" size={14} className="text-gray-400 flex-shrink-0" />
+{email.hasAttachments && (
+                          <ApperIcon name="Paperclip" size={14} className="text-gray-500 flex-shrink-0" />
                         )}
                         {email.isStarred && (
                           <ApperIcon name="Star" size={14} className="text-yellow-500 fill-current flex-shrink-0" />
                         )}
                       </div>
                       <div className={cn(
-                        "text-sm truncate mb-1",
-                        !email.isRead ? "font-semibold text-gray-900" : "text-gray-600"
+"text-sm truncate mb-1",
+                        !email.isRead ? "font-semibold text-gray-900" : "text-gray-700"
                       )}>
                         {email.subject || "(No subject)"}
                       </div>
-                      <div className="text-sm text-gray-500 truncate">
+<div className="text-sm text-gray-600 truncate">
                         {getEmailPreview(email.body)}
                       </div>
                     </div>
                     
 <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-                      <span className="text-sm text-gray-500 hidden sm:block">
+<span className="text-sm text-gray-600 hidden sm:block">
                         {formatTimestamp(email.timestamp)}
                       </span>
                       <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">

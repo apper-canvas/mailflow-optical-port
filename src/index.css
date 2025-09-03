@@ -22,8 +22,8 @@
 }
 
 @layer components {
-  .btn-primary {
-    @apply bg-primary hover:bg-blue-600 text-white font-medium px-4 py-2 rounded transition-all duration-200 shadow-sm hover:shadow-md;
+.btn-primary {
+    @apply bg-primary hover:bg-red-600 text-white font-medium px-4 py-2 rounded transition-all duration-200 shadow-sm hover:shadow-md;
   }
   
   .btn-secondary {
@@ -34,28 +34,28 @@
     @apply text-gray-600 hover:text-gray-900 hover:bg-gray-100 font-medium px-3 py-2 rounded transition-all duration-200;
   }
   
-  .input-field {
-    @apply w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors duration-200;
+.input-field {
+    @apply w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors duration-200 bg-white;
   }
   
   .email-row {
     @apply border-b border-gray-200 hover:bg-gray-50 cursor-pointer transition-all duration-150;
   }
   
-  .email-row.unread {
-    @apply bg-blue-50/30 hover:bg-blue-50/50;
+.email-row.unread {
+    @apply bg-red-50/30 hover:bg-red-50/50;
   }
   
   .email-row.selected {
-    @apply bg-blue-50 border-l-4 border-l-primary;
+    @apply bg-red-50 border-l-4 border-l-primary;
   }
   
   .sidebar-item {
     @apply flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-100 hover:text-gray-900 rounded-lg transition-all duration-200 cursor-pointer;
   }
   
-  .sidebar-item.active {
-    @apply bg-blue-50 text-primary hover:bg-blue-50 hover:text-primary;
+.sidebar-item.active {
+    @apply bg-red-50 text-primary hover:bg-red-50 hover:text-primary;
   }
 }
 
@@ -73,15 +73,15 @@
 }
 
 .Toastify__toast--success {
-  background: #34A853;
-}
+    background: #34A853;
+  }
 
-.Toastify__toast--error {
-  background: #EA4335;
-}
+  .Toastify__toast--error {
+    background: #EA4335;
+  }
 
-.Toastify__toast--info {
-  background: #4285F4;
+  .Toastify__toast--info {
+    background: #D93025;
 }
 
 .Toastify__toast--warning {

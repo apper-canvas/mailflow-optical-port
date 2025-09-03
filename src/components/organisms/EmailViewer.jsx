@@ -111,8 +111,8 @@ const EmailViewer = () => {
   }
 
   return (
-<div className="bg-white h-full flex flex-col overflow-hidden">
-      <div className="border-b border-gray-200 p-4">
+<div className="bg-white h-full flex flex-col overflow-hidden border border-gray-200">
+<div className="border-b border-gray-200 p-4 bg-white">
         <div className="flex items-center justify-between mb-4">
           <Button
             variant="ghost"
@@ -136,13 +136,13 @@ const EmailViewer = () => {
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-semibold text-gray-900">
+<h3 className="font-semibold text-gray-900">
                     {email.fromName || email.from}
                   </h3>
-                  <p className="text-sm text-gray-600">{email.from}</p>
+<p className="text-sm text-gray-700">{email.from}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm text-gray-500">
+<p className="text-sm text-gray-600">
                     {formatTimestamp(email.timestamp)}
                   </p>
                   {email.isStarred && (
@@ -151,7 +151,7 @@ const EmailViewer = () => {
                 </div>
               </div>
               
-              <div className="mt-2 text-sm text-gray-600">
+<div className="mt-2 text-sm text-gray-700">
                 <p><strong>To:</strong> {Array.isArray(email.to) ? email.to.join(", ") : email.to}</p>
                 {email.cc && email.cc.length > 0 && (
                   <p><strong>Cc:</strong> {Array.isArray(email.cc) ? email.cc.join(", ") : email.cc}</p>
@@ -161,14 +161,14 @@ const EmailViewer = () => {
           </div>
           
           <div>
-            <h1 className="text-xl font-semibold text-gray-900">
+<h1 className="text-xl font-semibold text-gray-900 mb-1">
               {email.subject || "(No subject)"}
             </h1>
           </div>
         </div>
       </div>
 
-<div className="flex-1 p-4 sm:p-6 overflow-auto custom-scrollbar">
+<div className="flex-1 p-4 sm:p-6 overflow-auto custom-scrollbar bg-white">
         <div className="prose prose-sm max-w-none">
           <div className="text-gray-700 leading-relaxed whitespace-pre-wrap">
             {formatEmailBody(email.body)}
@@ -176,19 +176,19 @@ const EmailViewer = () => {
         </div>
         
         {email.hasAttachments && (
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+<div className="mt-6 p-4 bg-gray-100 rounded-lg">
             <div className="flex items-center gap-2 mb-2">
               <ApperIcon name="Paperclip" size={16} className="text-gray-500" />
               <span className="text-sm font-medium text-gray-700">Attachments</span>
             </div>
-            <div className="text-sm text-gray-500">
+<div className="text-sm text-gray-600">
               Attachment functionality would be implemented here
             </div>
           </div>
         )}
       </div>
 
-      <div className="border-t border-gray-200 p-4">
+<div className="border-t border-gray-200 p-4 bg-white">
         <div className="flex items-center gap-2">
           <Button onClick={handleReply} icon="Reply">
             Reply
