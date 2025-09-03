@@ -3,7 +3,6 @@
     "Id": 1,
     "name": "Inbox",
     "icon": "Inbox",
-    "count": 6,
     "type": "system",
     "slug": "inbox"
   },
@@ -11,7 +10,6 @@
     "Id": 2,
     "name": "Sent",
     "icon": "Send",
-    "count": 2,
     "type": "system",
     "slug": "sent"
   },
@@ -19,7 +17,6 @@
     "Id": 3,
     "name": "Drafts",
     "icon": "FileText",
-    "count": 1,
     "type": "system",
     "slug": "drafts"
   },
@@ -27,7 +24,6 @@
     "Id": 4,
     "name": "Starred",
     "icon": "Star",
-    "count": 1,
     "type": "system",
     "slug": "starred"
   },
@@ -35,7 +31,6 @@
     "Id": 5,
     "name": "Trash",
     "icon": "Trash2",
-    "count": 1,
     "type": "system",
     "slug": "trash"
   }
