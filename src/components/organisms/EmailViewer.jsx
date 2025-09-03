@@ -132,7 +132,7 @@ const EmailViewer = () => {
         
         <div className="space-y-3">
           <div className="flex items-start gap-4">
-            <Avatar name={email.fromName} email={email.from} size="lg" />
+<Avatar name={email.fromName} email={email.from} size="lg" />
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between">
                 <div>

@@ -1,136 +1,503 @@
-import emailsData from "@/services/mockData/emails.json";
-
-let emails = [...emailsData];
+import { toast } from "react-toastify";
 
 // Callback system for notifying components of data changes
 let changeCallbacks = [];
 
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+// Initialize ApperClient
+const getApperClient = () => {
+  const { ApperClient } = window.ApperSDK;
+  return new ApperClient({
+    apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+    apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+  });
+};
 
 const emailService = {
   async getAll() {
-    await delay(300);
-    return [...emails];
+    try {
+      const apperClient = getApperClient();
+      const params = {
+        fields: [
+          {"field": {"Name": "Name"}},
+          {"field": {"Name": "from_c"}},
+          {"field": {"Name": "from_name_c"}},
+          {"field": {"Name": "to_c"}},
+          {"field": {"Name": "cc_c"}},
+          {"field": {"Name": "bcc_c"}},
+          {"field": {"Name": "subject_c"}},
+          {"field": {"Name": "body_c"}},
+          {"field": {"Name": "timestamp_c"}},
+          {"field": {"Name": "is_read_c"}},
+          {"field": {"Name": "is_starred_c"}},
+          {"field": {"Name": "folder_c"}},
+          {"field": {"Name": "thread_id_c"}},
+          {"field": {"Name": "has_attachments_c"}}
+        ],
+        orderBy: [{"fieldName": "timestamp_c", "sorttype": "DESC"}],
+        pagingInfo: {"limit": 100, "offset": 0}
+      };
+      
+      const response = await apperClient.fetchRecords('email_c', params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return [];
+      }
+      
+      if (!response.data || response.data.length === 0) {
+        return [];
+      }
+      
+      // Transform database fields to expected format
+      return response.data.map(email => ({
+        Id: email.Id,
+        from: email.from_c || "",
+        fromName: email.from_name_c || "",
+        to: email.to_c ? (typeof email.to_c === 'string' ? email.to_c.split(',').map(e => e.trim()) : email.to_c) : [],
+        cc: email.cc_c ? (typeof email.cc_c === 'string' ? email.cc_c.split(',').map(e => e.trim()) : email.cc_c) : [],
+        bcc: email.bcc_c ? (typeof email.bcc_c === 'string' ? email.bcc_c.split(',').map(e => e.trim()) : email.bcc_c) : [],
+        subject: email.subject_c || "",
+        body: email.body_c || "",
+        timestamp: email.timestamp_c || new Date().toISOString(),
+        isRead: email.is_read_c || false,
+        isStarred: email.is_starred_c || false,
+        folder: email.folder_c || "inbox",
+        threadId: email.thread_id_c || "",
+        hasAttachments: email.has_attachments_c || false
+      }));
+    } catch (error) {
+      console.error("Error fetching emails:", error);
+      return [];
+    }
   },
 
   async getById(id) {
-    await delay(200);
-    const email = emails.find(email => email.Id === parseInt(id));
-    if (!email) {
+    try {
+      const apperClient = getApperClient();
+      const params = {
+        fields: [
+          {"field": {"Name": "Name"}},
+          {"field": {"Name": "from_c"}},
+          {"field": {"Name": "from_name_c"}},
+          {"field": {"Name": "to_c"}},
+          {"field": {"Name": "cc_c"}},
+          {"field": {"Name": "bcc_c"}},
+          {"field": {"Name": "subject_c"}},
+          {"field": {"Name": "body_c"}},
+          {"field": {"Name": "timestamp_c"}},
+          {"field": {"Name": "is_read_c"}},
+          {"field": {"Name": "is_starred_c"}},
+          {"field": {"Name": "folder_c"}},
+          {"field": {"Name": "thread_id_c"}},
+          {"field": {"Name": "has_attachments_c"}}
+        ]
+      };
+      
+      const response = await apperClient.getRecordById('email_c', parseInt(id), params);
+      
+      if (!response.success || !response.data) {
+        throw new Error("Email not found");
+      }
+      
+      const email = response.data;
+      // Transform database fields to expected format
+      return {
+        Id: email.Id,
+        from: email.from_c || "",
+        fromName: email.from_name_c || "",
+        to: email.to_c ? (typeof email.to_c === 'string' ? email.to_c.split(',').map(e => e.trim()) : email.to_c) : [],
+        cc: email.cc_c ? (typeof email.cc_c === 'string' ? email.cc_c.split(',').map(e => e.trim()) : email.cc_c) : [],
+        bcc: email.bcc_c ? (typeof email.bcc_c === 'string' ? email.bcc_c.split(',').map(e => e.trim()) : email.bcc_c) : [],
+        subject: email.subject_c || "",
+        body: email.body_c || "",
+        timestamp: email.timestamp_c || new Date().toISOString(),
+        isRead: email.is_read_c || false,
+        isStarred: email.is_starred_c || false,
+        folder: email.folder_c || "inbox",
+        threadId: email.thread_id_c || "",
+        hasAttachments: email.has_attachments_c || false
+      };
+    } catch (error) {
+      console.error(`Error fetching email ${id}:`, error);
       throw new Error("Email not found");
     }
-    return { ...email };
   },
 
   async getByFolder(folder) {
-    await delay(250);
-    if (folder === "starred") {
-      return emails.filter(email => email.isStarred).map(email => ({ ...email }));
+    try {
+      const apperClient = getApperClient();
+      const params = {
+        fields: [
+          {"field": {"Name": "Name"}},
+          {"field": {"Name": "from_c"}},
+          {"field": {"Name": "from_name_c"}},
+          {"field": {"Name": "to_c"}},
+          {"field": {"Name": "cc_c"}},
+          {"field": {"Name": "bcc_c"}},
+          {"field": {"Name": "subject_c"}},
+          {"field": {"Name": "body_c"}},
+          {"field": {"Name": "timestamp_c"}},
+          {"field": {"Name": "is_read_c"}},
+          {"field": {"Name": "is_starred_c"}},
+          {"field": {"Name": "folder_c"}},
+          {"field": {"Name": "thread_id_c"}},
+          {"field": {"Name": "has_attachments_c"}}
+        ],
+        orderBy: [{"fieldName": "timestamp_c", "sorttype": "DESC"}],
+        pagingInfo: {"limit": 100, "offset": 0}
+      };
+      
+      if (folder === "starred") {
+        params.where = [{"FieldName": "is_starred_c", "Operator": "ExactMatch", "Values": [true]}];
+      } else {
+        params.where = [{"FieldName": "folder_c", "Operator": "ExactMatch", "Values": [folder]}];
+      }
+      
+      const response = await apperClient.fetchRecords('email_c', params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        return [];
+      }
+      
+      if (!response.data || response.data.length === 0) {
+        return [];
+      }
+      
+      // Transform database fields to expected format
+      return response.data.map(email => ({
+        Id: email.Id,
+        from: email.from_c || "",
+        fromName: email.from_name_c || "",
+        to: email.to_c ? (typeof email.to_c === 'string' ? email.to_c.split(',').map(e => e.trim()) : email.to_c) : [],
+        cc: email.cc_c ? (typeof email.cc_c === 'string' ? email.cc_c.split(',').map(e => e.trim()) : email.cc_c) : [],
+        bcc: email.bcc_c ? (typeof email.bcc_c === 'string' ? email.bcc_c.split(',').map(e => e.trim()) : email.bcc_c) : [],
+        subject: email.subject_c || "",
+        body: email.body_c || "",
+        timestamp: email.timestamp_c || new Date().toISOString(),
+        isRead: email.is_read_c || false,
+        isStarred: email.is_starred_c || false,
+        folder: email.folder_c || "inbox",
+        threadId: email.thread_id_c || "",
+        hasAttachments: email.has_attachments_c || false
+      }));
+    } catch (error) {
+      console.error("Error fetching emails by folder:", error);
+      return [];
     }
-    return emails.filter(email => email.folder === folder).map(email => ({ ...email }));
   },
 
   async search(query) {
-    await delay(300);
-    const searchTerm = query.toLowerCase();
-    return emails.filter(email => 
-      email.subject.toLowerCase().includes(searchTerm) ||
-      email.body.toLowerCase().includes(searchTerm) ||
-      email.fromName.toLowerCase().includes(searchTerm) ||
-      email.from.toLowerCase().includes(searchTerm)
-    ).map(email => ({ ...email }));
+    try {
+      const apperClient = getApperClient();
+      const searchTerm = query.trim().toLowerCase();
+      
+      const params = {
+        fields: [
+          {"field": {"Name": "Name"}},
+          {"field": {"Name": "from_c"}},
+          {"field": {"Name": "from_name_c"}},
+          {"field": {"Name": "to_c"}},
+          {"field": {"Name": "cc_c"}},
+          {"field": {"Name": "bcc_c"}},
+          {"field": {"Name": "subject_c"}},
+          {"field": {"Name": "body_c"}},
+          {"field": {"Name": "timestamp_c"}},
+          {"field": {"Name": "is_read_c"}},
+          {"field": {"Name": "is_starred_c"}},
+          {"field": {"Name": "folder_c"}},
+          {"field": {"Name": "thread_id_c"}},
+          {"field": {"Name": "has_attachments_c"}}
+        ],
+        whereGroups: [{
+          "operator": "OR",
+          "subGroups": [
+            {
+              "conditions": [
+                {"fieldName": "subject_c", "operator": "Contains", "values": [searchTerm]}
+              ],
+              "operator": "OR"
+            },
+            {
+              "conditions": [
+                {"fieldName": "body_c", "operator": "Contains", "values": [searchTerm]}
+              ],
+              "operator": "OR"
+            },
+            {
+              "conditions": [
+                {"fieldName": "from_name_c", "operator": "Contains", "values": [searchTerm]}
+              ],
+              "operator": "OR"
+            },
+            {
+              "conditions": [
+                {"fieldName": "from_c", "operator": "Contains", "values": [searchTerm]}
+              ],
+              "operator": "OR"
+            }
+          ]
+        }],
+        orderBy: [{"fieldName": "timestamp_c", "sorttype": "DESC"}],
+        pagingInfo: {"limit": 100, "offset": 0}
+      };
+      
+      const response = await apperClient.fetchRecords('email_c', params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        return [];
+      }
+      
+      if (!response.data || response.data.length === 0) {
+        return [];
+      }
+      
+      // Transform database fields to expected format
+      return response.data.map(email => ({
+        Id: email.Id,
+        from: email.from_c || "",
+        fromName: email.from_name_c || "",
+        to: email.to_c ? (typeof email.to_c === 'string' ? email.to_c.split(',').map(e => e.trim()) : email.to_c) : [],
+        cc: email.cc_c ? (typeof email.cc_c === 'string' ? email.cc_c.split(',').map(e => e.trim()) : email.cc_c) : [],
+        bcc: email.bcc_c ? (typeof email.bcc_c === 'string' ? email.bcc_c.split(',').map(e => e.trim()) : email.bcc_c) : [],
+        subject: email.subject_c || "",
+        body: email.body_c || "",
+        timestamp: email.timestamp_c || new Date().toISOString(),
+        isRead: email.is_read_c || false,
+        isStarred: email.is_starred_c || false,
+        folder: email.folder_c || "inbox",
+        threadId: email.thread_id_c || "",
+        hasAttachments: email.has_attachments_c || false
+      }));
+    } catch (error) {
+      console.error("Error searching emails:", error);
+      return [];
+    }
   },
 
   async create(emailData) {
-    await delay(400);
-    const maxId = emails.length > 0 ? Math.max(...emails.map(e => e.Id)) : 0;
-    const newEmail = {
-      Id: maxId + 1,
-      from: "me@mailflow.com",
-      fromName: "Me",
-      to: emailData.to || [],
-      cc: emailData.cc || [],
-      bcc: emailData.bcc || [],
-      subject: emailData.subject || "",
-      body: emailData.body || "",
-      timestamp: new Date().toISOString(),
-      isRead: true,
-      isStarred: false,
-      folder: emailData.folder || "sent",
-      threadId: `thread_${maxId + 1}`,
-      hasAttachments: false
-    };
-    emails.push(newEmail);
-    return { ...newEmail };
+    try {
+      const apperClient = getApperClient();
+      
+      // Transform to database field format
+      const dbData = {
+        Name: emailData.subject || "New Email",
+        from_c: "me@mailflow.com",
+        from_name_c: "Me",
+        to_c: Array.isArray(emailData.to) ? emailData.to.join(", ") : (emailData.to || ""),
+        cc_c: Array.isArray(emailData.cc) ? emailData.cc.join(", ") : (emailData.cc || ""),
+        bcc_c: Array.isArray(emailData.bcc) ? emailData.bcc.join(", ") : (emailData.bcc || ""),
+        subject_c: emailData.subject || "",
+        body_c: emailData.body || "",
+        timestamp_c: new Date().toISOString(),
+        is_read_c: true,
+        is_starred_c: false,
+        folder_c: emailData.folder || "sent",
+        thread_id_c: `thread_${Date.now()}`,
+        has_attachments_c: false
+      };
+      
+      const params = {
+        records: [dbData]
+      };
+      
+      const response = await apperClient.createRecord('email_c', params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        throw new Error(response.message);
+      }
+      
+      if (response.results) {
+        const successful = response.results.filter(r => r.success);
+        const failed = response.results.filter(r => !r.success);
+        
+        if (failed.length > 0) {
+          console.error(`Failed to create email:${JSON.stringify(failed)}`);
+          failed.forEach(record => {
+            if (record.message) toast.error(record.message);
+          });
+        }
+        
+        if (successful.length > 0) {
+          this.notifyChange();
+          const created = successful[0].data;
+          return {
+            Id: created.Id,
+            from: created.from_c || "",
+            fromName: created.from_name_c || "",
+            to: created.to_c ? created.to_c.split(',').map(e => e.trim()) : [],
+            cc: created.cc_c ? created.cc_c.split(',').map(e => e.trim()) : [],
+            bcc: created.bcc_c ? created.bcc_c.split(',').map(e => e.trim()) : [],
+            subject: created.subject_c || "",
+            body: created.body_c || "",
+            timestamp: created.timestamp_c || new Date().toISOString(),
+            isRead: created.is_read_c || false,
+            isStarred: created.is_starred_c || false,
+            folder: created.folder_c || "sent",
+            threadId: created.thread_id_c || "",
+            hasAttachments: created.has_attachments_c || false
+          };
+        }
+      }
+      
+      throw new Error("Failed to create email");
+    } catch (error) {
+      console.error("Error creating email:", error);
+      throw error;
+    }
   },
 
   async update(id, updates) {
-    await delay(200);
-    const index = emails.findIndex(email => email.Id === parseInt(id));
-    if (index === -1) {
-      throw new Error("Email not found");
+    try {
+      const apperClient = getApperClient();
+      
+      // Transform updates to database field format
+      const dbUpdates = {
+        Id: parseInt(id)
+      };
+      
+      if (updates.hasOwnProperty('isRead')) dbUpdates.is_read_c = updates.isRead;
+      if (updates.hasOwnProperty('isStarred')) dbUpdates.is_starred_c = updates.isStarred;
+      if (updates.hasOwnProperty('folder')) dbUpdates.folder_c = updates.folder;
+      if (updates.hasOwnProperty('subject')) dbUpdates.subject_c = updates.subject;
+      if (updates.hasOwnProperty('body')) dbUpdates.body_c = updates.body;
+      if (updates.hasOwnProperty('to')) dbUpdates.to_c = Array.isArray(updates.to) ? updates.to.join(", ") : updates.to;
+      if (updates.hasOwnProperty('cc')) dbUpdates.cc_c = Array.isArray(updates.cc) ? updates.cc.join(", ") : updates.cc;
+      if (updates.hasOwnProperty('bcc')) dbUpdates.bcc_c = Array.isArray(updates.bcc) ? updates.bcc.join(", ") : updates.bcc;
+      
+      const params = {
+        records: [dbUpdates]
+      };
+      
+      const response = await apperClient.updateRecord('email_c', params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        throw new Error(response.message);
+      }
+      
+      if (response.results) {
+        const successful = response.results.filter(r => r.success);
+        const failed = response.results.filter(r => !r.success);
+        
+        if (failed.length > 0) {
+          console.error(`Failed to update email:${JSON.stringify(failed)}`);
+          failed.forEach(record => {
+            if (record.message) toast.error(record.message);
+          });
+        }
+        
+        if (successful.length > 0) {
+          this.notifyChange();
+          const updated = successful[0].data;
+          return {
+            Id: updated.Id,
+            from: updated.from_c || "",
+            fromName: updated.from_name_c || "",
+            to: updated.to_c ? updated.to_c.split(',').map(e => e.trim()) : [],
+            cc: updated.cc_c ? updated.cc_c.split(',').map(e => e.trim()) : [],
+            bcc: updated.bcc_c ? updated.bcc_c.split(',').map(e => e.trim()) : [],
+            subject: updated.subject_c || "",
+            body: updated.body_c || "",
+            timestamp: updated.timestamp_c || new Date().toISOString(),
+            isRead: updated.is_read_c || false,
+            isStarred: updated.is_starred_c || false,
+            folder: updated.folder_c || "inbox",
+            threadId: updated.thread_id_c || "",
+            hasAttachments: updated.has_attachments_c || false
+          };
+        }
+      }
+      
+      throw new Error("Failed to update email");
+    } catch (error) {
+      console.error("Error updating email:", error);
+      throw error;
     }
-    emails[index] = { ...emails[index], ...updates };
-    return { ...emails[index] };
   },
 
   async delete(id) {
-    await delay(200);
-    const index = emails.findIndex(email => email.Id === parseInt(id));
-    if (index === -1) {
-      throw new Error("Email not found");
-    }
-    
-    if (emails[index].folder === "trash") {
-      // Permanently delete
-      emails.splice(index, 1);
-      return { success: true, message: "Email permanently deleted" };
-    } else {
-      // Move to trash
-      emails[index].folder = "trash";
-      return { ...emails[index] };
+    try {
+      const apperClient = getApperClient();
+      
+      // First get the current email to check folder
+      const email = await this.getById(id);
+      
+      if (email.folder === "trash") {
+        // Permanently delete
+        const params = {
+          RecordIds: [parseInt(id)]
+        };
+        
+        const response = await apperClient.deleteRecord('email_c', params);
+        
+        if (!response.success) {
+          console.error(response.message);
+          toast.error(response.message);
+          throw new Error(response.message);
+        }
+        
+        this.notifyChange();
+        return { success: true, message: "Email permanently deleted" };
+      } else {
+        // Move to trash
+        const updated = await this.update(id, { folder: "trash" });
+        return updated;
+      }
+    } catch (error) {
+      console.error("Error deleting email:", error);
+      throw error;
     }
   },
 
   async markAsRead(id) {
-    await delay(150);
     return this.update(id, { isRead: true });
   },
 
   async markAsUnread(id) {
-    await delay(150);
     return this.update(id, { isRead: false });
   },
 
   async toggleStar(id) {
-    await delay(150);
-    const email = emails.find(email => email.Id === parseInt(id));
-    if (!email) {
-      throw new Error("Email not found");
+    try {
+      const email = await this.getById(id);
+      return this.update(id, { isStarred: !email.isStarred });
+    } catch (error) {
+      console.error("Error toggling star:", error);
+      throw error;
     }
-    return this.update(id, { isStarred: !email.isStarred });
   },
 
   async saveDraft(draftData) {
-    await delay(300);
-    const existingDraft = emails.find(email => 
-      email.folder === "drafts" && email.subject === draftData.subject
-    );
+    try {
+      // Check for existing draft with same subject
+      const existingDrafts = await this.getByFolder("drafts");
+      const existingDraft = existingDrafts.find(email => 
+        email.subject === draftData.subject && draftData.subject.trim() !== ""
+      );
 
-    if (existingDraft) {
-      return this.update(existingDraft.Id, {
-        to: draftData.to || [],
-        cc: draftData.cc || [],
-        bcc: draftData.bcc || [],
-        subject: draftData.subject || "",
-        body: draftData.body || "",
-        timestamp: new Date().toISOString()
-      });
-    } else {
-      return this.create({
-        ...draftData,
-        folder: "drafts"
-});
+      if (existingDraft) {
+        return this.update(existingDraft.Id, {
+          to: draftData.to || [],
+          cc: draftData.cc || [],
+          bcc: draftData.bcc || [],
+          subject: draftData.subject || "",
+          body: draftData.body || ""
+        });
+      } else {
+        return this.create({
+          ...draftData,
+          folder: "drafts"
+        });
+      }
+    } catch (error) {
+      console.error("Error saving draft:", error);
+      throw error;
     }
   },
 
@@ -152,62 +519,6 @@ const emailService = {
       }
     });
   }
-};
-
-// Helper function to notify change and delay
-const notifyAndDelay = async (ms = 200) => {
-  emailService.notifyChange();
-  await delay(ms);
-};
-
-// Override existing methods to include notifications
-const originalCreate = emailService.create;
-emailService.create = async function(email) {
-  const result = await originalCreate.call(this, email);
-  this.notifyChange();
-  return result;
-};
-
-const originalUpdate = emailService.update;
-emailService.update = async function(id, updates) {
-  const result = await originalUpdate.call(this, id, updates);
-  this.notifyChange();
-  return result;
-};
-
-const originalDelete = emailService.delete;
-emailService.delete = async function(id) {
-  const result = await originalDelete.call(this, id);
-  this.notifyChange();
-  return result;
-};
-
-const originalMove = emailService.move;
-emailService.move = async function(emailId, targetFolder) {
-  const result = await originalMove.call(this, emailId, targetFolder);
-  this.notifyChange();
-  return result;
-};
-
-const originalToggleStar = emailService.toggleStar;
-emailService.toggleStar = async function(emailId) {
-  const result = await originalToggleStar.call(this, emailId);
-  this.notifyChange();
-  return result;
-};
-
-const originalMarkAsRead = emailService.markAsRead;
-emailService.markAsRead = async function(emailId) {
-  const result = await originalMarkAsRead.call(this, emailId);
-  this.notifyChange();
-  return result;
-};
-
-const originalMarkAsUnread = emailService.markAsUnread;
-emailService.markAsUnread = async function(emailId) {
-  const result = await originalMarkAsUnread.call(this, emailId);
-  this.notifyChange();
-  return result;
 };
 
 export default emailService;

@@ -1,7 +1,7 @@
 import React from "react";
 import ApperIcon from "@/components/ApperIcon";
 import SearchBar from "@/components/molecules/SearchBar";
-
+import LogoutButton from "@/components/molecules/LogoutButton";
 const Header = ({ onMenuClick, onSearch, title = "Inbox" }) => {
   return (
 <header className="bg-white border-b border-gray-200 px-3 sm:px-4 py-3 flex-shrink-0">
@@ -24,9 +24,7 @@ const Header = ({ onMenuClick, onSearch, title = "Inbox" }) => {
           <button className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors duration-200">
             <ApperIcon name="Bell" size={20} />
           </button>
-          <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-            <span className="text-white text-sm font-medium">M</span>
-          </div>
+          <LogoutButton />
         </div>
       </div>
     </header>

@@ -23,7 +23,7 @@ const [sending, setSending] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (replyTo) {
+if (replyTo) {
       setFormData({
         to: replyTo.from,
         cc: "",
@@ -46,7 +46,7 @@ const [sending, setSending] = useState(false);
 
   const loadDraft = async () => {
     try {
-      const draft = await emailService.getById(draftId);
+const draft = await emailService.getById(draftId);
       setFormData({
         to: Array.isArray(draft.to) ? draft.to.join(", ") : draft.to,
         cc: Array.isArray(draft.cc) ? draft.cc.join(", ") : draft.cc || "",
@@ -78,7 +78,7 @@ const [sending, setSending] = useState(false);
 
     setSending(true);
     try {
-      await emailService.create({
+await emailService.create({
         to: parseEmails(formData.to),
         cc: parseEmails(formData.cc),
         bcc: parseEmails(formData.bcc),
@@ -109,7 +109,7 @@ const [sending, setSending] = useState(false);
   const handleSaveDraft = async () => {
     setSaving(true);
     try {
-      await emailService.saveDraft({
+await emailService.saveDraft({
         to: parseEmails(formData.to),
         cc: parseEmails(formData.cc),
         bcc: parseEmails(formData.bcc),
@@ -176,7 +176,7 @@ const handleDiscard = () => {
             <div className="flex items-center gap-2">
               <label className="text-sm font-medium text-gray-700 w-12">To:</label>
               <Input
-                value={formData.to}
+value={formData.to}
                 onChange={(e) => handleChange("to", e.target.value)}
                 placeholder="Recipients"
                 className="flex-1"
