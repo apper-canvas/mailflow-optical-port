@@ -1,6 +1,6 @@
 import "@/index.css";
 import React, { createContext, useEffect, useRef, useState } from "react";
-import { BrowserRouter, Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
 import { clearUser, setUser } from "./store/userSlice";
@@ -220,10 +220,8 @@ function EmailAppContent() {
 }
 
 function EmailApp() {
-  return (
-    <BrowserRouter>
-      <EmailAppContent />
-    </BrowserRouter>
+return (
+    <EmailAppContent />
   );
 }
 
