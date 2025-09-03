@@ -1,20 +1,23 @@
-import React, { useState, useEffect } from "react";
+import React, { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
+import { cn } from "@/utils/cn";
+import folderService from "@/services/api/folderService";
 import ApperIcon from "@/components/ApperIcon";
 import Button from "@/components/atoms/Button";
-import folderService from "@/services/api/folderService";
-import { cn } from "@/utils/cn";
 
-const Sidebar = ({ isOpen, onClose }) => {
+const Sidebar = forwardRef(({ isOpen, onClose }, ref) => {
   const [folders, setFolders] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  useImperativeHandle(ref, () => ({
+    loadFolders
+  }));
+
   useEffect(() => {
     loadFolders();
   }, []);
-
   const loadFolders = async () => {
     try {
       setLoading(true);
@@ -132,12 +135,12 @@ className="lg:hidden fixed left-0 top-0 bottom-0 w-64 sm:w-72 z-50"
     </AnimatePresence>
   );
 
-  return (
+return (
     <>
       {desktopSidebar}
       {mobileSidebar}
     </>
   );
-};
+});
 
 export default Sidebar;

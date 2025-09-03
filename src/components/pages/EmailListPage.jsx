@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import Header from "@/components/organisms/Header";
 import EmailList from "@/components/organisms/EmailList";
 
-const EmailListPage = ({ onMenuClick }) => {
+const EmailListPage = ({ onMenuClick, refreshSidebar }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const { folder = "inbox" } = useParams();
 
@@ -26,7 +26,7 @@ const EmailListPage = ({ onMenuClick }) => {
         title={getFolderTitle()}
       />
 <div className="flex-1 overflow-hidden">
-        <EmailList searchQuery={searchQuery} />
+        <EmailList searchQuery={searchQuery} refreshFolders={refreshSidebar} />
       </div>
     </div>
   );

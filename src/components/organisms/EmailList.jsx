@@ -12,7 +12,7 @@ import Empty from "@/components/ui/Empty";
 import emailService from "@/services/api/emailService";
 import { cn } from "@/utils/cn";
 
-const EmailList = ({ searchQuery }) => {
+const EmailList = ({ searchQuery, refreshFolders }) => {
   const [emails, setEmails] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -44,13 +44,17 @@ const EmailList = ({ searchQuery }) => {
     }
   };
 
-  const handleEmailClick = async (email) => {
+const handleEmailClick = async (email) => {
     if (!email.isRead) {
       try {
         await emailService.markAsRead(email.Id);
         setEmails(prev => prev.map(e => 
           e.Id === email.Id ? { ...e, isRead: true } : e
         ));
+        // Refresh sidebar counts after marking email as read
+        if (refreshFolders) {
+          refreshFolders();
+        }
       } catch (err) {
         console.error("Failed to mark email as read:", err);
       }
@@ -58,23 +62,31 @@ const EmailList = ({ searchQuery }) => {
     navigate(`/email/${email.Id}`);
   };
 
-  const handleToggleStar = async (emailId) => {
+const handleToggleStar = async (emailId) => {
     try {
       const updatedEmail = await emailService.toggleStar(emailId);
       setEmails(prev => prev.map(e => 
         e.Id === emailId ? updatedEmail : e
       ));
       toast.success(updatedEmail.isStarred ? "Email starred" : "Email unstarred");
+      // Refresh sidebar counts after starring/unstarring
+      if (refreshFolders) {
+        refreshFolders();
+      }
     } catch (err) {
       toast.error("Failed to update email");
     }
   };
 
-  const handleDelete = async (emailId) => {
+const handleDelete = async (emailId) => {
     try {
       await emailService.delete(emailId);
       setEmails(prev => prev.filter(e => e.Id !== emailId));
       toast.success("Email moved to trash");
+      // Refresh sidebar counts after deleting email
+      if (refreshFolders) {
+        refreshFolders();
+      }
     } catch (err) {
       toast.error("Failed to delete email");
     }
@@ -92,7 +104,7 @@ const EmailList = ({ searchQuery }) => {
     setSelectedEmails(isSelected ? emails.map(e => e.Id) : []);
 };
 
-  const handleBulkDelete = async () => {
+const handleBulkDelete = async () => {
     if (selectedEmails.length === 0) return;
     
     try {
@@ -108,6 +120,11 @@ const EmailList = ({ searchQuery }) => {
       setSelectedEmails([]);
       
       toast.success(`${emailsToDelete.length} email${emailsToDelete.length !== 1 ? 's' : ''} moved to trash`);
+      
+      // Refresh sidebar counts after bulk delete
+      if (refreshFolders) {
+        refreshFolders();
+      }
     } catch (err) {
       toast.error("Failed to delete selected emails");
     }
