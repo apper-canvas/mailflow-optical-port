@@ -52,7 +52,14 @@ const EmailViewer = () => {
 
   const handleDelete = async () => {
     try {
-      await emailService.delete(email.Id);
+try {
+        await emailService.delete(email.Id);
+      } catch (error) {
+        console.error("Failed to delete email:", error);
+        const errorMessage = error?.response?.data?.message || error.message || "Failed to delete email";
+        toast.error(errorMessage);
+        return;
+      }
       toast.success("Email moved to trash");
       navigate(-1);
     } catch (err) {
@@ -62,7 +69,14 @@ const EmailViewer = () => {
 
   const handleToggleStar = async () => {
     try {
-      const updatedEmail = await emailService.toggleStar(email.Id);
+try {
+        const updatedEmail = await emailService.toggleStar(email.Id);
+      } catch (error) {
+        console.error("Failed to toggle star:", error);
+        const errorMessage = error?.response?.data?.message || error.message || "Failed to update email";
+        toast.error(errorMessage);
+        return;
+      }
       setEmail(updatedEmail);
       toast.success(updatedEmail.isStarred ? "Email starred" : "Email unstarred");
     } catch (err) {

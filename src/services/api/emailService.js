@@ -1,5 +1,4 @@
 import { toast } from "react-toastify";
-
 // Callback system for notifying components of data changes
 let changeCallbacks = [];
 
@@ -53,10 +52,11 @@ const mapEmailToDatabase = (email) => {
   if (email.thread_id_c !== undefined) dbEmail.thread_id_c = email.thread_id_c;
   if (email.has_attachments_c !== undefined) dbEmail.has_attachments_c = email.has_attachments_c;
   
-  return dbEmail;
+return dbEmail;
 };
+
 const emailService = {
-async getAll() {
+  async getAll() {
     try {
       const apperClient = getApperClient();
       
@@ -272,7 +272,14 @@ async create(emailData) {
     try {
       const apperClient = getApperClient();
       
-      // Prepare email data using only updateable fields
+      // Validate required fields before creating email
+      if (!emailData.to || (Array.isArray(emailData.to) && emailData.to.length === 0)) {
+        const error = "Recipient email address is required";
+        console.error("Email creation validation failed:", error);
+        toast.error(error);
+        throw new Error(error);
+      }
+
       const dbEmail = {
         sender_email_c: "user@mailflow.com",
         sender_name_c: "You",
@@ -288,6 +295,8 @@ async create(emailData) {
         thread_id_c: `thread_${Date.now()}`,
         has_attachments_c: false
       };
+
+      console.log("Creating email with payload:", dbEmail);
 
       const params = {
         records: [dbEmail]
@@ -398,8 +407,7 @@ async delete(id) {
       
       // First, get the current email to check its folder
       const currentEmail = await this.getById(id);
-      
-      if (currentEmail.folder === "trash") {
+if (currentEmail.folder === "trash") {
         // Permanently delete
         const params = { 
           RecordIds: [parseInt(id)]
@@ -442,7 +450,6 @@ async delete(id) {
       throw error;
     }
   },
-
   async markAsRead(id) {
     return this.update(id, { isRead: true });
   },
@@ -459,9 +466,9 @@ async delete(id) {
       console.error("Error toggling star:", error);
       throw error;
     }
-  },
+},
 
-async saveDraft(draftData) {
+  async saveDraft(draftData) {
     try {
       const apperClient = getApperClient();
       
@@ -480,16 +487,23 @@ async saveDraft(draftData) {
       if (existingResponse.success && existingResponse.data && existingResponse.data.length > 0) {
         // Update existing draft
         const existingId = existingResponse.data[0].Id;
-        const updatedDraft = await this.update(existingId, {
-          to: Array.isArray(draftData.to) ? draftData.to : [draftData.to],
-          cc: draftData.cc || [],
-          bcc: draftData.bcc || [],
-          subject: draftData.subject || "(No Subject)",
-          body: draftData.body || ""
-        });
-        
-        toast.success("Draft updated");
-        return updatedDraft;
+        try {
+          const updatedDraft = await this.update(existingId, {
+            to: Array.isArray(draftData.to) ? draftData.to : [draftData.to],
+            cc: draftData.cc || [],
+            bcc: draftData.bcc || [],
+            subject: draftData.subject || "(No Subject)",
+            body: draftData.body || ""
+          });
+          
+          toast.success("Draft updated");
+          return updatedDraft;
+        } catch (error) {
+          console.error("Failed to update draft:", error);
+          const errorMessage = error?.response?.data?.message || error.message || "Failed to update draft";
+          toast.error(errorMessage);
+          throw error;
+        }
       } else {
         // Create new draft
         const dbDraft = {
@@ -507,6 +521,8 @@ async saveDraft(draftData) {
           thread_id_c: `thread_${Date.now()}`,
           has_attachments_c: false
         };
+
+        console.log("Creating draft with payload:", dbDraft);
 
         const createParams = {
           records: [dbDraft]
