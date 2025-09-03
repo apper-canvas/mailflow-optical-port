@@ -52,7 +52,7 @@ const systemFolders = [
 const folderService = {
   async getAll() {
     try {
-      // Get all emails to calculate counts
+// Get all emails to calculate counts
       const emails = await emailService.getAll();
       
       // Calculate counts for each folder

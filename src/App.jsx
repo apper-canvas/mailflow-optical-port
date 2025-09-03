@@ -3,7 +3,7 @@ import React, { createContext, useEffect, useRef, useState } from "react";
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
-import { clearUser, setUser, setGmailAuth, clearGmailAuth } from "./store/userSlice";
+import { clearUser, setUser } from "./store/userSlice";
 import Login from "@/components/pages/Login";
 import Signup from "@/components/pages/Signup";
 import Callback from "@/components/pages/Callback";
@@ -120,9 +120,6 @@ useEffect(() => {
     if (isAuthenticated) {
       const unregister = emailService.registerCallback(refreshSidebar);
       return unregister;
-    } else {
-      // Clear Gmail authentication when user logs out
-      dispatch(clearGmailAuth());
     }
   }, [isAuthenticated, dispatch]);
 
@@ -131,8 +128,7 @@ useEffect(() => {
     isInitialized,
 logout: async () => {
       try {
-        // Clear Gmail authentication first
-        dispatch(clearGmailAuth());
+// Clear any cached data
         
         // Logout from Apper
         const { ApperUI } = window.ApperSDK;
