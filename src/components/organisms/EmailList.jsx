@@ -4,6 +4,7 @@ import { formatDistanceToNow } from "date-fns";
 import { toast } from "react-toastify";
 import ApperIcon from "@/components/ApperIcon";
 import Avatar from "@/components/atoms/Avatar";
+import Button from "@/components/atoms/Button";
 import EmailActions from "@/components/molecules/EmailActions";
 import Loading from "@/components/ui/Loading";
 import Error from "@/components/ui/Error";
@@ -89,6 +90,27 @@ const EmailList = ({ searchQuery }) => {
 
   const handleSelectAll = (isSelected) => {
     setSelectedEmails(isSelected ? emails.map(e => e.Id) : []);
+};
+
+  const handleBulkDelete = async () => {
+    if (selectedEmails.length === 0) return;
+    
+    try {
+      const emailsToDelete = [...selectedEmails];
+      
+      // Delete each selected email
+      await Promise.all(emailsToDelete.map(emailId => emailService.delete(emailId)));
+      
+      // Update emails list by removing deleted emails
+      setEmails(prev => prev.filter(e => !emailsToDelete.includes(e.Id)));
+      
+      // Clear selection
+      setSelectedEmails([]);
+      
+      toast.success(`${emailsToDelete.length} email${emailsToDelete.length !== 1 ? 's' : ''} moved to trash`);
+    } catch (err) {
+      toast.error("Failed to delete selected emails");
+    }
   };
 
   const formatTimestamp = (timestamp) => {
@@ -183,9 +205,26 @@ className="rounded border-gray-300 text-primary focus:ring-primary/20 bg-white"
               {getFolderTitle()}
             </h2>
 <span className="text-sm text-gray-600">
-              {emails.length} email{emails.length !== 1 ? "s" : ""}
+{emails.length} email{emails.length !== 1 ? "s" : ""}
             </span>
           </div>
+          
+          {selectedEmails.length > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">
+                {selectedEmails.length} selected
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                icon="Trash2"
+                onClick={handleBulkDelete}
+                className="text-red-500 hover:text-red-600"
+              >
+                Delete ({selectedEmails.length})
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
