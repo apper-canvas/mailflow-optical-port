@@ -1,7 +1,4 @@
-import React from "react";
 import emailsData from "@/services/mockData/emails.json";
-import emailService from "@/services/mockData/folders.json";
-import Error from "@/components/ui/Error";
 
 let emails = [...emailsData];
 
