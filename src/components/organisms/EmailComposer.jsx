@@ -6,7 +6,6 @@ import Button from "@/components/atoms/Button";
 import Input from "@/components/atoms/Input";
 import emailService from "@/services/api/emailService";
 import { cn } from "@/utils/cn";
-
 const EmailComposer = ({ replyTo, forwardEmail, onClose }) => {
   const [formData, setFormData] = useState({
     to: "",
@@ -17,8 +16,9 @@ const EmailComposer = ({ replyTo, forwardEmail, onClose }) => {
   });
   const [showCc, setShowCc] = useState(false);
   const [showBcc, setShowBcc] = useState(false);
-  const [sending, setSending] = useState(false);
+const [sending, setSending] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showDiscardModal, setShowDiscardModal] = useState(false);
   const { draftId } = useParams();
   const navigate = useNavigate();
 
@@ -124,11 +124,18 @@ const EmailComposer = ({ replyTo, forwardEmail, onClose }) => {
     }
   };
 
-  const handleDiscard = () => {
-    if (window.confirm("Are you sure you want to discard this email?")) {
-      navigate(-1);
-      onClose?.();
-    }
+const handleDiscard = () => {
+    setShowDiscardModal(true);
+  };
+
+  const confirmDiscard = () => {
+    setShowDiscardModal(false);
+    navigate(-1);
+    onClose?.();
+  };
+
+  const cancelDiscard = () => {
+    setShowDiscardModal(false);
   };
 
   return (
@@ -269,7 +276,35 @@ const EmailComposer = ({ replyTo, forwardEmail, onClose }) => {
             </Button>
           </div>
         </div>
-      </div>
+</div>
+
+      {/* Discard Confirmation Modal */}
+      {showDiscardModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={cancelDiscard}>
+          <div 
+            className="bg-white rounded-lg p-6 max-w-sm w-full mx-4 shadow-card"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex-shrink-0 w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                <ApperIcon name="AlertTriangle" size={20} className="text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Discard Email</h3>
+                <p className="text-sm text-gray-600">Are you sure you want to discard this email?</p>
+              </div>
+            </div>
+            <div className="flex gap-3 justify-end">
+              <Button variant="secondary" onClick={cancelDiscard}>
+                Cancel
+              </Button>
+              <Button variant="danger" onClick={confirmDiscard}>
+                Discard
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
