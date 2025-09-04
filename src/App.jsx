@@ -116,21 +116,18 @@ function EmailAppContent() {
   };
   
   // Register email service callbacks for authenticated users
-useEffect(() => {
+  useEffect(() => {
     if (isAuthenticated) {
       const unregister = emailService.registerCallback(refreshSidebar);
       return unregister;
     }
-  }, [isAuthenticated, dispatch]);
+  }, [isAuthenticated]);
 
   // Authentication methods to share via context
   const authMethods = {
     isInitialized,
-logout: async () => {
+    logout: async () => {
       try {
-// Clear any cached data
-        
-        // Logout from Apper
         const { ApperUI } = window.ApperSDK;
         await ApperUI.logout();
         dispatch(clearUser());
@@ -223,7 +220,7 @@ logout: async () => {
 }
 
 function EmailApp() {
-  return (
+return (
     <EmailAppContent />
   );
 }

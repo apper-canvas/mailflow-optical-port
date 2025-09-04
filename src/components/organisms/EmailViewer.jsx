@@ -1,14 +1,14 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { format, formatDistanceToNow } from "date-fns";
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { formatDistanceToNow, format } from "date-fns";
 import { toast } from "react-toastify";
-import emailService from "@/services/api/emailService";
 import ApperIcon from "@/components/ApperIcon";
-import EmailActions from "@/components/molecules/EmailActions";
-import Error from "@/components/ui/Error";
-import Loading from "@/components/ui/Loading";
 import Avatar from "@/components/atoms/Avatar";
 import Button from "@/components/atoms/Button";
+import EmailActions from "@/components/molecules/EmailActions";
+import Loading from "@/components/ui/Loading";
+import Error from "@/components/ui/Error";
+import emailService from "@/services/api/emailService";
 
 const EmailViewer = () => {
   const [email, setEmail] = useState(null);
@@ -50,27 +50,23 @@ const EmailViewer = () => {
     navigate("/compose", { state: { forwardEmail: email } });
   };
 
-const handleDelete = async () => {
+  const handleDelete = async () => {
     try {
-      await emailService.delete(email.id);
+      await emailService.delete(email.Id);
       toast.success("Email moved to trash");
       navigate(-1);
-    } catch (error) {
-      console.error("Failed to delete email:", error);
-      const errorMessage = error?.response?.data?.message || error.message || "Failed to delete email";
-      toast.error(errorMessage);
+    } catch (err) {
+      toast.error("Failed to delete email");
     }
   };
 
-const handleToggleStar = async () => {
+  const handleToggleStar = async () => {
     try {
-      const updatedEmail = await emailService.toggleStar(email.id);
+      const updatedEmail = await emailService.toggleStar(email.Id);
       setEmail(updatedEmail);
       toast.success(updatedEmail.isStarred ? "Email starred" : "Email unstarred");
-    } catch (error) {
-      console.error("Failed to toggle star:", error);
-      const errorMessage = error?.response?.data?.message || error.message || "Failed to update email";
-      toast.error(errorMessage);
+    } catch (err) {
+      toast.error("Failed to update email");
     }
   };
 
